@@ -578,6 +578,7 @@ input[type=file] { display: none; }
               <div class="type-choice" onclick="pickType('textarea')"><div class="type-choice-icon" style="background:#ece8ff;color:#5a3abc;"><svg viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M6 8h8M6 11h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div><div><div class="type-choice-name">長文入力</div><div class="type-choice-desc">複数行テキスト</div></div></div>
               <div class="type-choice" onclick="pickType('image')"><div class="type-choice-icon" style="background:#fce8f3;color:#b01e7a;"><svg viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><circle cx="7.5" cy="7.5" r="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M3 14l4-3.5 3 2.5 3-3 5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><div class="type-choice-name">画像挿入</div><div class="type-choice-desc">画像と説明文</div></div></div>
               <div class="type-choice" onclick="pickType('video')"><div class="type-choice-icon" style="background:#fce8e8;color:#b03030;"><svg viewBox="0 0 20 20" fill="none"><rect x="3" y="5" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M8 8l5 2-5 2V8z" fill="currentColor"/></svg></div><div><div class="type-choice-name">動画挿入</div><div class="type-choice-desc">YouTube URLを埋め込む</div></div></div>
+              <div class="type-choice" onclick="pickType('cover')"><div class="type-choice-icon" style="background:#fff3e0;color:#e65100;"><svg viewBox="0 0 20 20" fill="none"><rect x="3" y="2" width="14" height="16" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M6 7h8M6 10h8M6 13h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div><div><div class="type-choice-name">表紙</div><div class="type-choice-desc">長文の案内・説明</div></div></div>
               <div class="type-choice" onclick="pickType('description')"><div class="type-choice-icon" style="background:#f0f0f0;color:#505060;"><svg viewBox="0 0 20 20" fill="none"><path d="M4 6h12M4 9.5h12M4 13h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div><div><div class="type-choice-name">説明文</div><div class="type-choice-desc">テキストのみ表示</div></div></div>
               <div class="type-choice" onclick="pickType('url')"><div class="type-choice-icon" style="background:#e8f7ee;color:#1a7a4a;"><svg viewBox="0 0 20 20" fill="none"><path d="M8.5 12a4 4 0 0 0 5.5 0l2-2a4 4 0 0 0-5.5-5.5l-1 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M11.5 8a4 4 0 0 0-5.5 0l-2 2a4 4 0 0 0 5.5 5.5l1-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div><div><div class="type-choice-name">URLリンク</div><div class="type-choice-desc">外部リンクを埋め込む</div></div></div>
               <div class="type-choice" onclick="pickType('branch')"><div class="type-choice-icon" style="background:#fff3e0;color:#e0851a;"><svg viewBox="0 0 20 20" fill="none"><path d="M10 3v5M7 10l3 4 3-4M7 10H5M13 10h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><div class="type-choice-name">条件分岐</div><div class="type-choice-desc">回答でスキップ</div></div></div>
@@ -836,6 +837,7 @@ const typeLabels = {
   image:       ['画像挿入',           'tag-image'],
   url:         ['URL挿入',            'tag-url'],
   description: ['説明文',             'tag-textarea'],
+  cover:       ['表紙',               'tag-textarea'],
   video:       ['動画',               'tag-image'],
   branch:      ['条件分岐',           'tag-select'],
 };
@@ -1014,6 +1016,31 @@ function buildQuestionBody(type, q) {
       <div class="toggle-row">
         <span class="toggle-label">必須回答</span>
         <label class="toggle"><input type="checkbox" ${q.required?'checked':''} onchange="toggleRequired(this,'${id}')" /><span class="toggle-slider"></span></label>
+      </div>
+    `;
+    return html;
+  }
+
+  // ── 表紙 ──
+  if(type === 'cover') {
+    const id = q.id;
+    html += `
+      <div class="field-row">
+        <div class="field-label">表紙タイトル</div>
+        <input class="field-input" placeholder="例：アンケートへのご協力のお願い" value="${q.title||''}" oninput="syncTitle(this,'${id}')" />
+      </div>
+      <div class="field-row">
+        <div class="field-label">本文（長文テキスト）</div>
+        <textarea class="field-input" id="coverBody_${id}" rows="8" placeholder="このアンケートの目的、所要時間、注意事項などを記入してください...">${q.coverBody||''}</textarea>
+      </div>
+      <div class="field-row">
+        <div class="field-label">背景スタイル</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${[['white','白'],['accent','アクセントカラー'],['light','ライトグレー']].map(([v,l])=>`
+            <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;">
+              <input type="radio" name="coverStyle_${id}" value="${v}" ${v==='white'?'checked':''} style="accent-color:var(--accent);" />${l}
+            </label>`).join('')}
+        </div>
       </div>
     `;
     return html;
@@ -1830,6 +1857,17 @@ function buildLivePreview() {
       if(text) html += `<div class="prev-q-item" style="padding:8px 10px;background:#f4f3f8;border-left:2px solid var(--accent);border-radius:0 6px 6px 0;font-size:11px;color:var(--text2);line-height:1.6;">${text}</div>`;
       return;
     }
+    if(type === 'cover') {
+      const titleInput = card.querySelector('.field-input[oninput*="syncTitle"]');
+      const bodyTA     = card.querySelector(`#coverBody_${id}`);
+      const coverTitle = titleInput ? titleInput.value : '';
+      const coverBody  = bodyTA ? bodyTA.value : '';
+      html += `<div class="prev-q-item" style="padding:14px;background:linear-gradient(135deg,#ede9ff,#f4f3f8);border-radius:8px;border:1px solid var(--accent-light);">
+        ${coverTitle ? `<div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px;">${coverTitle}</div>` : ''}
+        ${coverBody  ? `<div style="font-size:11px;color:var(--text2);line-height:1.8;white-space:pre-wrap;">${coverBody}</div>` : ''}
+      </div>`;
+      return;
+    }
     if(type === 'video') {
       const urlInput = card.querySelector('input[type=url]');
       const url = urlInput ? urlInput.value.trim() : '';
@@ -2208,6 +2246,8 @@ async function loadSurveyFromDB(id) {
         scaleMax: q.settings?.max || 5,
         scaleMinLabel: q.settings?.minLabel || '',
         scaleMaxLabel: q.settings?.maxLabel || '',
+        coverBody:  q.settings?.coverBody  || '',
+        coverStyle: q.settings?.coverStyle || 'white',
         dbId: q.id, // 元のDB上のIDを保持
       };
 
@@ -2282,6 +2322,13 @@ async function saveSurveyToDB() {
         settings = { url: card.querySelector('input[type=url]')?.value||'' };
       } else if(type === 'description') {
         settings = { text: card.querySelector('textarea.field-input')?.value||'' };
+      } else if(type === 'cover') {
+        const bodyTA    = card.querySelector(`[id^="coverBody_"]`);
+        const styleEl   = card.querySelector(`[name^="coverStyle_"]:checked`);
+        settings = {
+          coverBody:  bodyTA  ? bodyTA.value  : '',
+          coverStyle: styleEl ? styleEl.value : 'white',
+        };
       } else if(type === 'matrix' || type === 'matrix_multi') {
         settings = {
           interval: parseInt(card.querySelector(`[id^="minterval_"]`)?.value)||5
