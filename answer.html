@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>顧客満足度調査 2025 — Survey Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --accent: #5b52e8;
+  --accent-light: #ede9ff;
+  --danger: #e24b4a;
+  --success: #22a06b;
+  --bg: #f4f3f8;
+  --surface: #ffffff;
+  --surface2: #f8f7fc;
+  --border: rgba(0,0,0,0.08);
+  --text: #1a1825;
+  --text2: #6b677e;
+  --text3: #aba8bb;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --shadow: 0 2px 16px rgba(91,82,232,0.08);
+  --shadow-lg: 0 8px 40px rgba(91,82,232,0.13);
+  --font: 'DM Sans','Noto Sans JP',sans-serif;
+  --header: #5b52e8;
+  --btn: #5b52e8;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:var(--font); background:var(--bg); color:var(--text); min-height:100vh; }
+
+/* ── HEADER ── */
+.survey-header {
+  background:var(--header);
+  color:#fff;
+  padding:32px 24px 28px;
+  text-align:center;
+}
+.survey-header h1 { font-size:22px; font-weight:500; margin-bottom:8px; }
+.survey-header p { font-size:13px; opacity:.75; line-height:1.6; max-width:480px; margin:0 auto 14px; }
+.progress-wrap { max-width:480px; margin:0 auto; }
+.progress-bar { height:4px; background:rgba(255,255,255,.25); border-radius:2px; overflow:hidden; }
+.progress-fill { height:100%; background:#fff; border-radius:2px; transition:width .4s ease; }
+.progress-label { font-size:11px; opacity:.65; margin-top:5px; text-align:right; }
+
+/* ── BODY ── */
+.survey-body { max-width:640px; margin:0 auto; padding:28px 16px 60px; }
+
+/* ── QUESTION CARD ── */
+.q-block {
+  background:var(--surface); border-radius:var(--radius);
+  padding:24px; margin-bottom:16px;
+  box-shadow:var(--shadow); border:1px solid var(--border);
+  animation:fadeUp .2s ease;
+}
+@keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+.q-label { font-size:15px; font-weight:500; color:var(--text); margin-bottom:14px; line-height:1.55; }
+.q-required { color:var(--danger); font-size:13px; margin-left:3px; }
+.q-desc { font-size:13px; color:var(--text2); margin-top:-8px; margin-bottom:12px; line-height:1.6; }
+
+/* description block */
+.desc-block {
+  background:var(--surface); border-radius:var(--radius);
+  padding:20px 24px; margin-bottom:16px;
+  border-left:4px solid var(--accent);
+  box-shadow:var(--shadow);
+}
+.desc-block p { font-size:14px; color:var(--text2); line-height:1.7; }
+
+/* inputs */
+.field { width:100%; padding:11px 14px; border-radius:var(--radius-sm); border:1.5px solid var(--border); font-size:14px; font-family:var(--font); background:var(--surface2); color:var(--text); outline:none; transition:border-color .15s; }
+.field:focus { border-color:var(--accent); background:var(--surface); }
+textarea.field { resize:vertical; min-height:100px; }
+
+/* radio / checkbox */
+.choice-list { display:flex; flex-direction:column; gap:9px; }
+.choice-item { display:flex; align-items:center; gap:11px; padding:11px 14px; border-radius:var(--radius-sm); border:1.5px solid var(--border); cursor:pointer; transition:all .15s; background:var(--surface2); }
+.choice-item:hover { border-color:var(--accent); background:var(--accent-light); }
+.choice-item.selected { border-color:var(--accent); background:var(--accent-light); }
+.choice-item input { accent-color:var(--btn); width:16px; height:16px; flex-shrink:0; }
+.choice-item span { font-size:14px; color:var(--text); }
+
+/* scale */
+.scale-row { display:flex; justify-content:space-between; gap:6px; margin-bottom:6px; }
+.scale-btn {
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:5px;
+  padding:10px 4px; border-radius:var(--radius-sm); border:1.5px solid var(--border);
+  cursor:pointer; transition:all .15s; background:var(--surface2);
+}
+.scale-btn:hover { border-color:var(--accent); background:var(--accent-light); }
+.scale-btn.selected { border-color:var(--accent); background:var(--accent); color:#fff; }
+.scale-btn.selected .scale-num { color:#fff; }
+.scale-num { font-size:14px; font-weight:500; color:var(--text2); }
+.scale-labels { display:flex; justify-content:space-between; margin-top:2px; }
+.scale-labels span { font-size:11px; color:var(--text3); max-width:45%; line-height:1.4; }
+.scale-labels span:last-child { text-align:right; }
+
+/* ranking */
+.ranking-list { display:flex; flex-direction:column; gap:8px; }
+.rank-item {
+  display:flex; align-items:center; gap:12px;
+  padding:11px 14px; border-radius:var(--radius-sm);
+  border:1.5px solid var(--border); background:var(--surface2);
+  cursor:grab; transition:all .15s; user-select:none;
+}
+.rank-item:hover { border-color:var(--accent); box-shadow:0 2px 8px rgba(91,82,232,.1); }
+.rank-item.dragging { opacity:.35; }
+.rank-item.drag-over { border-color:var(--accent); border-style:dashed; }
+.rank-num {
+  min-width:26px; height:26px; border-radius:7px;
+  background:var(--accent-light); color:var(--accent);
+  font-size:13px; font-weight:700;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.rank-item.dragging + .rank-item .rank-num,
+.rank-item.selected .rank-num { background:var(--accent); color:#fff; }
+.rank-label { flex:1; font-size:14px; color:var(--text); }
+.rank-grip { color:var(--text3); }
+.rank-grip svg { width:14px; height:14px; display:block; }
+.rank-hint { font-size:11px; color:var(--text3); margin-top:6px; text-align:center; }
+
+/* matrix */
+.matrix-wrap { overflow-x:auto; }
+.matrix-table { border-collapse:collapse; width:100%; font-size:13px; }
+.matrix-table th { text-align:center; padding:6px 4px 10px; font-size:12px; font-weight:500; color:var(--text2); min-width:72px; vertical-align:bottom; line-height:1.3; }
+.matrix-table th:first-child { min-width:0; }
+.matrix-table td { padding:0; }
+.matrix-row td:first-child { font-size:13px; color:var(--text); padding:4px 10px 8px 4px; line-height:1.4; }
+.matrix-row-num-cell { font-weight:700; color:var(--accent); padding-right:6px !important; white-space:nowrap; }
+.matrix-radio-cell { text-align:center; padding:8px 4px !important; }
+.matrix-radio-cell input { accent-color:var(--btn); width:16px; height:16px; cursor:pointer; }
+.matrix-separator { height:1px; background:var(--border); }
+
+/* submit */
+.submit-area { margin-top:28px; text-align:center; }
+.btn-submit {
+  display:inline-block; padding:15px 48px; border-radius:10px;
+  background:var(--btn); color:#fff; font-size:16px; font-weight:500;
+  border:none; cursor:pointer; font-family:var(--font);
+  transition:all .15s; box-shadow:0 4px 14px rgba(91,82,232,.25);
+}
+.btn-submit:hover { background:#4a42d4; transform:translateY(-1px); box-shadow:0 6px 20px rgba(91,82,232,.3); }
+.btn-submit:active { transform:translateY(0); }
+.btn-submit:disabled { background:var(--text3); box-shadow:none; cursor:not-allowed; transform:none; }
+.required-note { font-size:12px; color:var(--text3); margin-bottom:20px; }
+
+/* complete */
+.complete-screen { display:none; text-align:center; padding:60px 24px; }
+.complete-icon { width:64px; height:64px; border-radius:50%; background:#e4f9f1; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; }
+.complete-icon svg { width:32px; height:32px; color:#22a06b; }
+.complete-screen h2 { font-size:22px; font-weight:500; color:var(--text); margin-bottom:10px; }
+.complete-screen p { font-size:14px; color:var(--text2); line-height:1.7; }
+.error-msg { font-size:12px; color:var(--danger); margin-top:6px; display:none; }
+.field.error { border-color:var(--danger); }
+</style>
+</head>
+<body>
+
+<div class="survey-header" style="position:relative;">
+    <h1>顧客満足度調査 2025</h1>
+  <p>このアンケートは当社サービスの品質向上を目的としています。ご協力をよろしくお願いいたします。</p>
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <div class="progress-label" id="progressLabel">0 / 6 問</div>
+  </div>
+</div>
+
+<div class="survey-body" id="surveyBody" style="display:none;">
+  <p class="required-note">* は必須回答です</p>
+  <div id="dynamicQuestions"></div>
+  <div class="submit-area">
+    <button class="btn-submit" id="submitBtn" onclick="submitSurvey()">送信する</button>
+  </div>
+</div>
+
+<!-- 完了画面 -->
+<div class="complete-screen" id="completeScreen" style="display:none;">
+  <div style="margin-bottom:16px;">
+    <a href="list.html" style="display:none;"></a>
+  </div>
+  <div class="complete-icon">
+    <svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="14" stroke="currentColor" stroke-width="2"/><path d="M10 16l4.5 4.5L22 11" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+  <h2>ご回答ありがとうございました！</h2>
+  <p>いただいたご意見はサービス改善に活用させていただきます。<br>引き続きよろしくお願いいたします。</p>
+</div>
+
+<script>
+// 選択UI
+function selectChoice(el, name, total) {
+  document.querySelectorAll(`#${name} .choice-item`).forEach(i => i.classList.remove('selected'));
+  el.classList.add('selected');
+  el.querySelector('input').checked = true;
+  updateProgress(total);
+}
+function toggleCheck(el, total) {
+  el.classList.toggle('selected');
+  el.querySelector('input').checked = el.classList.contains('selected');
+  if(total) updateProgress(total);
+}
+function selectScale(el, groupId, val, total) {
+  document.querySelectorAll(`#${groupId} .scale-btn`).forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  el.dataset.val = val;
+  if(total) updateProgress(total);
+}
+
+// プログレス（DB設問対応）
+function updateProgress(total) {
+  const blocks = document.querySelectorAll('.q-block');
+  if(!total) total = blocks.length;
+  let answered = 0;
+  blocks.forEach(b => {
+    const qid = b.dataset.qid;
+    const input  = b.querySelector('input[type=text],input[type=number]');
+    const area   = b.querySelector('textarea');
+    const sel    = b.querySelector('select');
+    const radio  = b.querySelector('input[type=radio]:checked');
+    const check  = b.querySelector('input[type=checkbox]:checked');
+    const scale  = b.querySelector('.scale-btn.selected');
+    if(input?.value || area?.value || sel?.value || radio || check || scale) answered++;
+  });
+  answered = Math.min(answered, total);
+  document.getElementById('progressFill').style.width = (answered/total*100)+'%';
+  document.getElementById('progressLabel').textContent = `${answered} / ${total} 問`;
+}
+
+// バリデーション（required設問をチェック）
+function validate() {
+  let ok = true;
+  document.querySelectorAll('.q-block[data-required="true"]').forEach(b => {
+    const qid   = b.dataset.qid;
+    const errEl = document.getElementById(`err_${qid}`);
+    const input = b.querySelector('input[type=text],textarea,select');
+    const radio = b.querySelector('input[type=radio]:checked');
+    const scale = b.querySelector('.scale-btn.selected');
+    const answered = (input?.value) || radio || scale;
+    if(!answered) {
+      if(errEl) errEl.style.display = 'block';
+      ok = false;
+    } else {
+      if(errEl) errEl.style.display = 'none';
+    }
+  });
+  return ok;
+}
+
+async function submitSurvey() {
+  if(!validate()) {
+    document.querySelector('[id^="err_"][style*="block"]')
+      ?.closest('.q-block')?.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '送信中...';
+
+  try {
+    if(SURVEY_ID) {
+      // 回答セッション作成
+      const [response] = await sbPost('responses', {
+        survey_id: SURVEY_ID,
+        completed: true,
+        finished_at: new Date().toISOString()
+      });
+
+      // 各設問の回答を収集
+      const answers = [];
+      const surveyQuestions = window._surveyQuestions || [];
+      document.querySelectorAll('.q-block').forEach((b, idx) => {
+        const qid      = b.dataset.qid;
+        const dbQId    = surveyQuestions[idx]?.id || null; // 実際のDB question_id
+        const radio    = b.querySelector('input[type=radio]:checked');
+        const checks   = [...b.querySelectorAll('input[type=checkbox]:checked')];
+        const scale    = b.querySelector('.scale-btn.selected');
+        const select   = b.querySelector('select');
+        const text     = b.querySelector('input[type=text],textarea');
+        const ranks    = [...b.querySelectorAll('.rank-label')].map(l=>l.textContent);
+
+        let value = '', values = [];
+        if(radio)              value = radio.value;
+        else if(checks.length) { values = checks.map(c=>c.value); value = values.join(','); }
+        else if(scale)         value = scale.dataset.val || '';
+        else if(select?.value) value = select.value;
+        else if(text?.value)   value = text.value;
+        else if(ranks.length)  { values = ranks; value = ranks.join(','); }
+
+        if(value || values.length) {
+          answers.push({ response_id: response.id, question_id: dbQId, value, values });
+        }
+      });
+
+      if(answers.length) {
+        console.log('answers送信:', answers.length, '件', answers);
+        const res = await sbPost('answers', answers);
+        console.log('answers結果:', res);
+      } else {
+        console.log('answers: 送信対象なし');
+      }
+    }
+
+    // 完了画面表示
+    document.getElementById('surveyBody').style.display = 'none';
+    document.getElementById('completeScreen').style.display = 'block';
+    document.querySelector('.survey-header').style.display = 'none';
+    document.getElementById('progressFill').style.width = '100%';
+
+  } catch(e) {
+    console.error('submit error:', e.message, e);
+    // エラー内容をトースト表示
+    const errDiv = document.createElement('div');
+    errDiv.textContent = '送信エラー: ' + e.message;
+    errDiv.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#e24b4a;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;';
+    document.body.appendChild(errDiv);
+    setTimeout(()=>errDiv.remove(), 4000);
+    btn.disabled = false;
+    btn.textContent = '送信する';
+  }
+}
+
+// Supabase設定
+const SB_URL = 'https://sqagawuubujrcyxkmwbg.supabase.co';
+const SB_KEY = 'sb_publishable_wmDriUhLXbcQcdd5UZMivQ_k7oe2HYC';
+async function sbPost(path, body) {
+  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+    method: 'POST',
+    headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+    body: JSON.stringify(body)
+  });
+  if(!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+// URLからsurveyIdを取得
+const SURVEY_ID = new URLSearchParams(location.search).get('survey') || null;
+
+// DBからアンケート情報と設問を取得してレンダリング
+async function loadSurveyInfo() {
+  if(!SURVEY_ID) {
+    // IDなし = サンプル表示
+    document.getElementById('surveyBody').style.display = 'block';
+    updateProgress();
+    return;
+  }
+  try {
+    const SB_URL2 = 'https://sqagawuubujrcyxkmwbg.supabase.co';
+    const SB_KEY2 = 'sb_publishable_wmDriUhLXbcQcdd5UZMivQ_k7oe2HYC';
+    const get = path => fetch(`${SB_URL2}/rest/v1/${path}`, {
+      headers: { apikey: SB_KEY2, Authorization: `Bearer ${SB_KEY2}` }
+    }).then(r => r.json());
+
+    // アンケート情報
+    const [survey] = await get(`surveys?id=eq.${SURVEY_ID}&select=*`);
+    if(!survey) {
+      document.querySelector('.survey-header h1').textContent = 'アンケートが見つかりません';
+      return;
+    }
+    document.querySelector('.survey-header h1').textContent = survey.title;
+    document.querySelector('.survey-header p').textContent  = survey.description || '';
+    if(survey.header_color) document.querySelector('.survey-header').style.background = survey.header_color;
+    const submitBtn = document.getElementById('submitBtn');
+    if(submitBtn && survey.btn_color) submitBtn.style.background = survey.btn_color;
+    document.title = `${survey.title} — Survey Builder`;
+
+    // 設問・選択肢を取得（グローバルに保持してsubmit時に使用）
+    window._surveyQuestions = await get(`questions?survey_id=eq.${SURVEY_ID}&select=*,options(*)&order=position`);
+    const questions = window._surveyQuestions;
+    const container = document.getElementById('dynamicQuestions');
+    const total = questions.length;
+
+    document.getElementById('progressLabel').textContent = `0 / ${total} 問`;
+
+    container.innerHTML = questions.map((q, qi) => {
+      const choices = (q.options||[]).filter(o=>o.option_type==='choice').sort((a,b)=>a.position-b.position);
+      const qid = `dq_${qi}`;
+      const req = q.required ? '<span class="q-required">*</span>' : '';
+      let inner = '';
+
+      if(q.type === 'text') {
+        inner = `<input class="field" id="${qid}" placeholder="回答を入力..." oninput="updateProgress(${total})" />`;
+      } else if(q.type === 'textarea') {
+        inner = `<textarea class="field" id="${qid}" placeholder="回答を入力..." oninput="updateProgress(${total})"></textarea>`;
+      } else if(q.type === 'select') {
+        inner = `<select class="field" id="${qid}" onchange="updateProgress(${total})">
+          <option value="">選択してください...</option>
+          ${choices.map(o=>`<option value="${o.label}">${o.label}</option>`).join('')}
+        </select>`;
+      } else if(q.type === 'radio') {
+        inner = `<div class="choice-list" id="${qid}">
+          ${choices.map(o=>`<label class="choice-item" onclick="selectChoice(this,'${qid}',${total})">
+            <input type="radio" name="${qid}" value="${o.label}" /><span>${o.label}</span>
+          </label>`).join('')}
+        </div>`;
+      } else if(q.type === 'checkbox') {
+        inner = `<div class="choice-list" id="${qid}">
+          ${choices.map(o=>`<label class="choice-item" onclick="toggleCheck(this,${total})">
+            <input type="checkbox" value="${o.label}" /><span>${o.label}</span>
+          </label>`).join('')}
+        </div>`;
+      } else if(q.type === 'scale') {
+        const s = q.settings || {};
+        const min = s.min || 1, max = s.max || 5;
+        const steps = Array.from({length: max-min+1}, (_,i)=>i+min);
+        inner = `<div>
+          <div class="scale-row" id="${qid}">
+            ${steps.map(n=>`<div class="scale-btn" onclick="selectScale(this,'${qid}',${n},${total})"><span class="scale-num">${n}</span></div>`).join('')}
+          </div>
+          <div class="scale-labels">
+            <span>${s.minLabel||''}</span><span>${s.maxLabel||''}</span>
+          </div>
+        </div>`;
+      } else if(q.type === 'ranking') {
+        inner = `<div class="ranking-list" id="${qid}" ondragover="rankDragOver(event,'${qid}')" ondrop="rankDrop(event,'${qid}')">
+          ${choices.map((o,i)=>`<div class="rank-item" draggable="true" ondragstart="rankDragStart(event)">
+            <span class="rank-num">${i+1}</span>
+            <span class="rank-label">${o.label}</span>
+            <span class="rank-grip"><svg viewBox="0 0 12 12" fill="none"><circle cx="4" cy="2.5" r="1" fill="currentColor"/><circle cx="8" cy="2.5" r="1" fill="currentColor"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="8" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="9.5" r="1" fill="currentColor"/><circle cx="8" cy="9.5" r="1" fill="currentColor"/></svg></span>
+          </div>`).join('')}
+          <p class="rank-hint">⠿ をドラッグして順番を入れ替えてください</p>
+        </div>`;
+      } else if(q.type === 'description') {
+        return `<div class="desc-block"><p>${(q.settings&&q.settings.text)||q.title}</p></div>`;
+      }
+
+      return `<div class="q-block" data-qid="${qid}" data-required="${q.required}">
+        <div class="q-label">${q.title||''} ${req}</div>
+        ${inner}
+        ${q.required?`<div class="error-msg" id="err_${qid}">この設問は必須です</div>`:''}
+      </div>`;
+    }).join('');
+
+    document.getElementById('surveyBody').style.display = 'block';
+    updateProgress(total);
+  } catch(e) {
+    console.error('loadSurveyInfo error:', e);
+    document.getElementById('surveyBody').style.display = 'block';
+  }
+}
+
+loadSurveyInfo();
+
+// ランキングD&D
+let rankDragSrc = null;
+function rankDragStart(e) {
+  rankDragSrc = e.currentTarget;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain','rank');
+  setTimeout(() => rankDragSrc?.classList.add('dragging'), 0);
+}
+function rankDragOver(e, listId) {
+  e.preventDefault();
+  if(!rankDragSrc) return;
+  const list = document.getElementById(listId);
+  const items = [...list.querySelectorAll('.rank-item:not(.dragging)')];
+  const after = items.find(item => {
+    const rect = item.getBoundingClientRect();
+    return e.clientY < rect.top + rect.height / 2;
+  });
+  list.insertBefore(rankDragSrc, after || null);
+  renumberRank(listId);
+}
+function rankDrop(e, listId) {
+  e.preventDefault();
+  if(rankDragSrc) { rankDragSrc.classList.remove('dragging'); rankDragSrc = null; }
+  renumberRank(listId);
+}
+function renumberRank(listId) {
+  document.querySelectorAll(`#${listId} .rank-num`).forEach((n,i) => n.textContent = i+1);
+}
+document.addEventListener('dragend', () => {
+  if(rankDragSrc) { rankDragSrc.classList.remove('dragging'); rankDragSrc = null; }
+});
+
+updateProgress();
+</script>
+</body>
+</html>

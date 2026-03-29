@@ -1,0 +1,2494 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Survey Builder — アンケートビルダー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --accent: #5b52e8;
+  --accent-light: #ede9ff;
+  --accent-mid: #7c75ef;
+  --danger: #e24b4a;
+  --success: #22a06b;
+  --warn: #e0851a;
+  --bg: #f4f3f8;
+  --surface: #ffffff;
+  --surface2: #f8f7fc;
+  --border: rgba(91,82,232,0.12);
+  --border2: rgba(0,0,0,0.08);
+  --text: #1a1825;
+  --text2: #6b677e;
+  --text3: #aba8bb;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 2px 12px rgba(91,82,232,0.08);
+  --shadow-lg: 0 8px 32px rgba(91,82,232,0.14);
+  --font: 'DM Sans', 'Noto Sans JP', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; }
+
+/* ────── LAYOUT ────── */
+.app { display: flex; height: 100vh; }
+
+/* ────── SIDEBAR ────── */
+.sidebar{width:220px;background:#1a1825;flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;position:relative;}
+.sidebar::before{content:'';position:absolute;top:-60px;right:-30px;width:160px;height:160px;background:radial-gradient(circle,rgba(91,82,232,.35) 0%,transparent 70%);pointer-events:none;}
+.sb-logo{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.07);}
+.logo-row{display:flex;align-items:center;gap:8px;}
+.logo-icon{width:26px;height:26px;border-radius:7px;background:var(--accent);display:flex;align-items:center;justify-content:center;}
+.logo-icon svg{width:13px;height:13px;}
+.logo-text{font-size:15px;font-weight:500;color:#fff;}
+.logo-sub{font-size:10px;color:rgba(255,255,255,.35);margin-top:2px;margin-left:34px;}
+.sb-nav{padding:10px 0;flex:1;}
+.sb-sec{padding:10px 10px 4px;font-size:9px;font-weight:500;color:rgba(255,255,255,.25);letter-spacing:.1em;text-transform:uppercase;}
+.sb-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;margin:1px 6px;font-size:12px;color:rgba(255,255,255,.55);cursor:pointer;transition:all .15s;}
+.sb-item:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.85);}
+.sb-item.active{background:rgba(91,82,232,.25);color:#fff;border-left:2px solid #7c75ef;}
+.sb-item svg{width:13px;height:13px;opacity:.7;flex-shrink:0;}
+.sb-item.active svg{opacity:1;}
+.sb-badge{margin-left:auto;font-size:10px;background:var(--accent);color:#fff;padding:1px 6px;border-radius:8px;}
+.sb-footer{padding:10px;border-top:1px solid rgba(255,255,255,.06);margin-top:auto;}
+.sb-user{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;cursor:pointer;}
+.sb-user:hover{background:rgba(255,255,255,.06);}
+.sb-avatar{width:26px;height:26px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#fff;}
+.sb-user .name{font-size:11px;color:rgba(255,255,255,.8);font-weight:500;}
+.sb-user .role{font-size:9px;color:rgba(255,255,255,.3);}
+
+/* ────── MAIN ────── */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+/* ────── TOPBAR ────── */
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border2);
+  padding: 0 20px;
+  height: 54px;
+  display: flex; align-items: center; gap: 12px;
+  flex-shrink: 0;
+}
+.topbar-back { color: var(--text2); cursor: pointer; display: flex; align-items: center; gap: 5px; font-size: 13px; padding: 5px 8px; border-radius: 6px; transition: background 0.1s; }
+.topbar-back:hover { background: var(--surface2); }
+.topbar-divider { width: 1px; height: 20px; background: var(--border2); }
+.topbar-title-wrap { flex: 1; }
+.topbar-title { font-size: 15px; font-weight: 500; color: var(--text); }
+.topbar-sub { font-size: 11px; color: var(--text3); }
+.status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--success); margin-right: 4px; }
+.topbar-tabs { display: flex; gap: 2px; margin: 0 8px; }
+.topbar-tab { padding: 6px 14px; font-size: 13px; color: var(--text2); border-radius: 6px; cursor: pointer; transition: all 0.15s; }
+.topbar-tab:hover { background: var(--surface2); color: var(--text); }
+.topbar-tab.active { background: var(--accent-light); color: var(--accent); font-weight: 500; }
+.topbar-actions { display: flex; gap: 7px; align-items: center; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border2); background: var(--surface); color: var(--text); font-family: var(--font); transition: all 0.15s; }
+.btn:hover { background: var(--surface2); }
+.btn-accent { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-accent:hover { background: #4a42d4; border-color: #4a42d4; }
+.btn svg { width: 14px; height: 14px; }
+
+/* ────── BODY ────── */
+.body { flex: 1; display: flex; overflow: hidden; }
+
+/* ────── EDITOR ────── */
+.editor-wrap { flex: 1; overflow-y: auto; padding: 24px; background: var(--bg); }
+.editor-wrap::-webkit-scrollbar { width: 6px; }
+.editor-wrap::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 3px; }
+
+/* ────── TOOLBOX ────── */
+.toolbox {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  box-shadow: var(--shadow);
+}
+.toolbox-title { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+.toolbox-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+.tool-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 10px 6px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border2); background: var(--surface2);
+  cursor: pointer; transition: all 0.15s; font-family: var(--font);
+}
+.tool-btn:hover { border-color: var(--accent); background: var(--accent-light); transform: translateY(-1px); box-shadow: 0 3px 10px rgba(91,82,232,0.12); }
+.tool-btn svg { width: 18px; height: 18px; color: var(--text2); }
+.tool-btn:hover svg { color: var(--accent); }
+.tool-btn span { font-size: 10px; font-weight: 500; color: var(--text2); white-space: nowrap; }
+.tool-btn:hover span { color: var(--accent); }
+
+/* ────── SURVEY META ────── */
+.survey-meta {
+  background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius);
+  padding: 18px 20px; margin-bottom: 18px; box-shadow: var(--shadow);
+  position: relative; overflow: hidden;
+}
+.survey-meta::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-mid));
+}
+.meta-label { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+.meta-title-input {
+  width: 100%; font-size: 18px; font-weight: 500; color: var(--text); font-family: var(--font);
+  border: none; outline: none; background: transparent; margin-bottom: 6px;
+}
+.meta-desc-input {
+  width: 100%; font-size: 13px; color: var(--text2); font-family: var(--font);
+  border: none; outline: none; background: transparent; resize: none;
+}
+.meta-row { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border2); flex-wrap: wrap; }
+.meta-tag { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border2); background: var(--surface2); cursor: pointer; }
+.meta-tag svg { width: 11px; height: 11px; }
+
+/* ────── QUESTION CARD ────── */
+.q-card {
+  background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius);
+  margin-bottom: 12px; box-shadow: var(--shadow); overflow: hidden;
+  transition: box-shadow 0.2s, transform 0.2s; position: relative;
+  animation: slideIn 0.2s ease;
+}
+@keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.q-card:hover { box-shadow: var(--shadow-lg); }
+.q-card.active { border-color: var(--accent); }
+.q-card-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 16px; cursor: pointer;
+  border-bottom: 1px solid transparent; transition: border-color 0.2s;
+}
+.q-card.active .q-card-header { border-bottom-color: var(--border2); }
+.q-drag { color: var(--text3); cursor: grab; padding: 2px 0; display: flex; align-items: center; }
+.q-drag svg { width: 12px; height: 12px; }
+.q-number {
+  width: 22px; height: 22px; border-radius: 6px; background: var(--accent-light);
+  color: var(--accent); font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.q-type-tag {
+  font-size: 10px; font-weight: 500; padding: 3px 8px; border-radius: 20px;
+  white-space: nowrap;
+}
+.tag-select { background: #fef3e8; color: #c17120; }
+.tag-radio { background: #e4f9f1; color: #1a8c5e; }
+.tag-radio-h { background: #e4f1f9; color: #1a6a8c; }
+.tag-text { background: #e8ecff; color: #3a52c8; }
+.tag-textarea { background: #ece8ff; color: #5a3abc; }
+.tag-image { background: #fce8f3; color: #b01e7a; }
+.tag-url { background: #e8f7ee; color: #1a7a4a; }
+.q-title-preview {
+  flex: 1; font-size: 13px; font-weight: 500; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.q-required-star { color: var(--danger); font-size: 13px; flex-shrink: 0; }
+.q-header-actions { display: flex; gap: 4px; margin-left: auto; }
+.icon-btn {
+  width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border2);
+  background: transparent; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--text2); transition: all 0.15s; font-family: var(--font);
+}
+.icon-btn:hover { background: var(--surface2); color: var(--text); }
+.icon-btn.danger:hover { background: #fde8e8; color: var(--danger); border-color: #f0b0b0; }
+.icon-btn svg { width: 13px; height: 13px; }
+
+/* ────── QUESTION BODY ────── */
+.q-body { padding: 16px 16px 16px 16px; display: none; }
+.q-card.active .q-body { display: block; }
+
+.field-row { margin-bottom: 12px; }
+.field-label { font-size: 11px; font-weight: 500; color: var(--text2); margin-bottom: 5px; display: flex; align-items: center; gap: 6px; }
+.field-input {
+  width: 100%; padding: 9px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border2);
+  font-size: 13px; font-family: var(--font); color: var(--text); background: var(--surface2);
+  outline: none; transition: border-color 0.15s;
+}
+.field-input:focus { border-color: var(--accent); background: var(--surface); }
+textarea.field-input { resize: vertical; min-height: 72px; }
+
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; }
+.toggle-label { font-size: 13px; color: var(--text); }
+.toggle { position: relative; width: 36px; height: 20px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: #d0cee8; border-radius: 10px; cursor: pointer; transition: 0.2s;
+}
+.toggle-slider::before {
+  content: ''; position: absolute; height: 14px; width: 14px; left: 3px; bottom: 3px;
+  background: #fff; border-radius: 50%; transition: 0.2s;
+}
+.toggle input:checked + .toggle-slider { background: var(--accent); }
+.toggle input:checked + .toggle-slider::before { transform: translateX(16px); }
+
+/* OPTIONS */
+.options-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 8px; }
+.option-item { display: flex; align-items: center; gap: 8px; transition: opacity 0.15s; }
+.option-item.drag-over-top { border-top: 2px solid var(--accent); padding-top: 2px; }
+.option-item.drag-over-bottom { border-bottom: 2px solid var(--accent); padding-bottom: 2px; }
+.option-item.dragging { opacity: 0.35; }
+.option-handle { color: var(--text3); cursor: grab; padding: 2px; border-radius: 4px; }
+.option-handle:hover { color: var(--accent); background: var(--accent-light); }
+.option-handle:active { cursor: grabbing; }
+.option-handle svg { width: 11px; height: 11px; display: block; }
+
+/* CARD D&D */
+.q-card { transition: opacity 0.15s, box-shadow 0.2s, transform 0.2s; }
+.q-card.card-dragging { opacity: 0.3; }
+.q-card.card-drag-over { box-shadow: 0 0 0 2px var(--accent), var(--shadow-lg); }
+.q-drag { color: var(--text3); cursor: grab; padding: 4px; border-radius: 4px; display: flex; align-items: center; }
+.q-drag:hover { color: var(--accent); background: var(--accent-light); }
+.q-drag:active { cursor: grabbing; }
+.q-drag svg { width: 12px; height: 12px; }
+.option-input {
+  flex: 1; padding: 7px 10px; border-radius: 6px; border: 1px solid var(--border2);
+  font-size: 13px; font-family: var(--font); background: var(--surface2); color: var(--text); outline: none;
+}
+.option-input:focus { border-color: var(--accent); background: var(--surface); }
+.add-option-btn {
+  display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--accent);
+  cursor: pointer; padding: 5px 0; font-weight: 500; background: none; border: none; font-family: var(--font);
+}
+.add-option-btn:hover { color: #4a42d4; }
+
+/* BRANCH */
+.branch-section { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border2); }
+.branch-title { font-size: 11px; font-weight: 500; color: var(--warn); margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
+.branch-title svg { width: 13px; height: 13px; }
+.branch-rule { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.branch-select {
+  padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border2);
+  font-size: 12px; font-family: var(--font); background: var(--surface2); color: var(--text); outline: none;
+}
+
+/* MATRIX ROW NUMBER */
+.matrix-row-num {
+  min-width: 20px; height: 20px; border-radius: 5px;
+  background: var(--accent-light); color: var(--accent);
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; padding: 0 4px;
+}
+
+/* IMAGE AREA */
+.image-upload-area {
+  border: 2px dashed var(--border2); border-radius: var(--radius-sm);
+  padding: 20px; text-align: center; cursor: pointer;
+  transition: all 0.15s; background: var(--surface2);
+}
+.image-upload-area:hover { border-color: var(--accent); background: var(--accent-light); }
+.image-upload-area svg { width: 24px; height: 24px; color: var(--text3); margin-bottom: 8px; }
+.image-upload-area p { font-size: 12px; color: var(--text2); }
+.uploaded-img { width: 100%; max-height: 160px; object-fit: cover; border-radius: 6px; }
+input[type=file] { display: none; }
+
+/* URL SECTION */
+.url-preview { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--surface2); border-radius: 6px; border: 1px solid var(--border2); margin-top: 6px; }
+.url-preview svg { width: 13px; height: 13px; color: var(--accent); flex-shrink: 0; }
+.url-preview span { font-size: 12px; color: var(--accent); text-decoration: underline; cursor: pointer; word-break: break-all; }
+
+/* ADD CARD */
+.add-q-area {
+  border: 2px dashed var(--border2); border-radius: var(--radius); padding: 16px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  font-size: 13px; color: var(--text3); cursor: pointer; background: transparent;
+  transition: all 0.15s; margin-bottom: 20px;
+}
+.add-q-area:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+.add-q-area svg { width: 16px; height: 16px; }
+
+/* TYPE MODAL */
+.type-choice {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 13px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border2); background: var(--surface2);
+  cursor: pointer; transition: all 0.15s;
+}
+.type-choice:hover { border-color: var(--accent); background: var(--accent-light); transform: translateY(-1px); box-shadow: 0 3px 10px rgba(91,82,232,0.1); }
+.type-choice-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.type-choice-icon svg { width: 18px; height: 18px; }
+.type-choice-name { font-size: 13px; font-weight: 500; color: var(--text); }
+.type-choice-desc { font-size: 11px; color: var(--text3); margin-top: 1px; }
+
+/* PREVIEW SIZE BTN */
+.pv-size-btn { background: none; border: none; cursor: pointer; padding: 5px 7px; border-radius: 6px; color: var(--text2); display: flex; align-items: center; justify-content: center; }
+.pv-size-btn.active { background: var(--surface); color: var(--accent); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+.pv-size-btn:hover:not(.active) { background: rgba(0,0,0,0.05); }
+
+/* MATRIX ROW NUMBER */
+.matrix-row-num {
+  min-width: 20px; height: 20px; border-radius: 5px;
+  background: var(--accent-light); color: var(--accent);
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ────── RIGHT PANEL ────── */
+.right-panel {
+  width: 300px; flex-shrink: 0;
+  background: var(--surface); border-left: 1px solid var(--border2);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.rp-tabs { display: flex; border-bottom: 1px solid var(--border2); }
+.rp-tab { flex: 1; padding: 12px 8px; font-size: 12px; font-weight: 500; color: var(--text2); text-align: center; cursor: pointer; transition: all 0.15s; border-bottom: 2px solid transparent; }
+.rp-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.rp-tab:hover:not(.active) { background: var(--surface2); }
+.rp-body { flex: 1; overflow-y: auto; padding: 16px; }
+.rp-body::-webkit-scrollbar { width: 4px; }
+.rp-body::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 2px; }
+
+/* SETTINGS PANEL */
+.setting-row { margin-bottom: 16px; }
+.setting-label { font-size: 11px; font-weight: 500; color: var(--text2); margin-bottom: 6px; }
+.color-swatch-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.swatch { width: 26px; height: 26px; border-radius: 50%; cursor: pointer; transition: transform 0.15s; border: 2px solid transparent; }
+.swatch:hover { transform: scale(1.15); }
+.swatch.active { border-color: var(--text); }
+.color-input-row { display: flex; align-items: center; gap: 8px; }
+.color-preview { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border2); flex-shrink: 0; }
+.small-input { flex: 1; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border2); font-size: 12px; font-family: var(--font); background: var(--surface2); color: var(--text); outline: none; }
+.small-input:focus { border-color: var(--accent); }
+
+/* PREVIEW PANEL */
+.preview-frame {
+  background: #f4f3f8; border-radius: var(--radius); border: 1px solid var(--border2); overflow: hidden;
+}
+.preview-header-bar { padding: 14px; color: #fff; }
+.preview-header-bar h3 { font-size: 14px; font-weight: 500; margin-bottom: 3px; }
+.preview-header-bar p { font-size: 11px; opacity: 0.75; }
+.preview-body { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.prev-q-item .pq-label { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+.prev-q-item .pq-req { color: var(--danger); }
+.prev-fake-input { border: 1px solid var(--border2); border-radius: 6px; padding: 7px 10px; font-size: 11px; color: var(--text3); background: #fff; }
+.prev-fake-textarea { border: 1px solid var(--border2); border-radius: 6px; padding: 7px 10px; font-size: 11px; color: var(--text3); background: #fff; height: 48px; }
+.prev-radio-list { display: flex; flex-direction: column; gap: 5px; }
+.prev-radio-h { display: flex; flex-wrap: wrap; gap: 6px; }
+.prev-r-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
+.prev-r-dot { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid #999; flex-shrink: 0; }
+.prev-r-dot.checked { background: var(--accent); border-color: var(--accent); }
+.prev-submit-btn { width: 100%; padding: 9px; border-radius: 8px; font-size: 13px; font-weight: 500; color: #fff; border: none; cursor: pointer; font-family: var(--font); }
+
+/* STATS */
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.stat-card { background: var(--surface2); border-radius: 8px; padding: 12px; border: 1px solid var(--border2); }
+.stat-num { font-size: 22px; font-weight: 700; color: var(--text); }
+.stat-label { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.response-list { display: flex; flex-direction: column; gap: 6px; }
+.resp-item { display: flex; align-items: center; gap: 9px; padding: 9px; background: var(--surface2); border-radius: 8px; border: 1px solid var(--border2); cursor: pointer; }
+.resp-item:hover { border-color: var(--accent); }
+.resp-avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #fff; flex-shrink: 0; }
+.resp-name { font-size: 12px; font-weight: 500; color: var(--text); }
+.resp-time { font-size: 10px; color: var(--text3); }
+.resp-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); margin-left: auto; flex-shrink: 0; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-logo">
+      <div class="logo-row">
+        <div class="logo-icon">
+          <svg viewBox="0 0 15 15" fill="none"><path d="M2 4h11M2 7.5h7M2 11h9" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <span class="logo-text">Survey Builder</span>
+      </div>
+      <div class="logo-sub">アンケートビルダー</div>
+    </div>
+
+    <div class="sb-sec">メニュー</div>
+    <div class="sb-item" id="sb-list" onclick="location.href='list.html'">
+      <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1.5" fill="currentColor"/><rect x="9" y="2" width="5" height="5" rx="1.5" fill="currentColor" opacity=".4"/><rect x="2" y="9" width="5" height="5" rx="1.5" fill="currentColor" opacity=".4"/><rect x="9" y="9" width="5" height="5" rx="1.5" fill="currentColor" opacity=".4"/></svg>
+      アンケート一覧
+    </div>
+    <div class="sb-item" onclick="location.href='responses.html'">
+      <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      回答データ
+      
+    </div>
+    <div class="sb-item" onclick="location.href='respondents.html'">
+      <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="7" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M2 13c0-2.21 2.686-4 6-4s6 1.79 6 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      回答者一覧
+    </div>
+
+    <div class="sb-sec" style="margin-top:8px">アンケート</div>
+    <div id="sb-surveys"></div>
+    <div class="sb-item" id="newFormBtn" style="margin-top:6px;" onclick="location.href='index.html?new=1'">
+      <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v6M5 8h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      新規作成
+    </div>
+
+    <div class="sb-footer">
+      <div class="sb-user">
+        <div class="sb-avatar">田</div>
+        <div><div class="name">田中 管理者</div><div class="role">Admin</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="topbar-back" onclick="location.href='list.html'" style="cursor:pointer;">
+        <svg viewBox="0 0 16 16" fill="none" style="width:13px;height:13px"><path d="M10 4L6 8l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        一覧
+      </div>
+      <div class="topbar-divider"></div>
+      <div class="topbar-title-wrap">
+        <div class="topbar-title">顧客満足度調査 2025</div>
+        <div class="topbar-sub"><span class="status-dot"></span>公開中 · 24件の回答</div>
+      </div>
+      <div class="topbar-tabs">
+        <div class="topbar-tab active" onclick="switchTab(this,'editor')">設問編集</div>
+        <div class="topbar-tab" onclick="switchTab(this,'design')">デザイン</div>
+        <div class="topbar-tab" id="resp-tab-btn" onclick="switchTab(this,'responses')">回答</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn" onclick="openAnswerPreview()">
+          <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="2" fill="currentColor"/></svg>
+          プレビュー
+        </button>
+        <button class="btn" onclick="saveSurveyToDB()" style="gap:5px;"><svg viewBox="0 0 14 14" fill="none" style="width:12px;height:12px;"><path d="M2 10V4a1 1 0 0 1 1-1h6l3 3v4a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z" stroke="currentColor" stroke-width="1.3"/><path d="M9 13v-3H5v3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 3V5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>保存</button>
+        <button class="btn btn-accent" onclick="saveSurveyToDB().then(()=>openPublishModal())">
+          <svg viewBox="0 0 16 16" fill="none"><path d="M13 8A5 5 0 1 1 3 8a5 5 0 0 1 10 0z" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v3l2 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          公開設定
+        </button>
+      </div>
+    </div>
+
+    <!-- BODY -->
+    <div class="body">
+
+      <!-- EDITOR AREA -->
+      <div class="editor-wrap" id="editorWrap">
+
+        <!-- TOOLBOX -->
+        <div class="toolbox">
+          <div class="toolbox-title">設問を追加</div>
+          <div class="toolbox-grid" style="grid-template-columns:repeat(4,1fr);">
+            <div class="tool-btn" onclick="addQuestion('radio')">
+              <svg viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="9" r="3" fill="currentColor"/></svg>
+              <span>ラジオ</span>
+            </div>
+            <div class="tool-btn" onclick="addQuestion('checkbox')">
+              <svg viewBox="0 0 18 18" fill="none"><rect x="3" y="3" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M6 9l2.5 2.5L13 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span>チェック</span>
+            </div>
+            <div class="tool-btn" onclick="addQuestion('scale')">
+              <svg viewBox="0 0 18 18" fill="none"><path d="M2 9h14M5 6l3 3-3 3M13 6l-3 3 3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span>スケール</span>
+            </div>
+            <div class="tool-btn" onclick="addQuestion('select')">
+              <svg viewBox="0 0 18 18" fill="none"><rect x="2" y="5" width="14" height="8" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M11 9l2 2 2-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span>プルダウン</span>
+            </div>
+            <div class="tool-btn" onclick="addQuestion('ranking')">
+              <svg viewBox="0 0 18 18" fill="none"><path d="M3 5h3M3 9h3M3 13h3M8 5h7M8 9h7M8 13h7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><text x="3.5" y="6.5" font-size="3.5" fill="currentColor">1</text><text x="3.5" y="10.5" font-size="3.5" fill="currentColor">2</text><text x="3.5" y="14.5" font-size="3.5" fill="currentColor">3</text></svg>
+              <span>ランキング</span>
+            </div>
+            <div class="tool-btn" onclick="addQuestion('matrix')">
+              <svg viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M2 6h14M2 10h14M6 2v14" stroke="currentColor" stroke-width="1.2"/></svg>
+              <span>MX単選択</span>
+            </div>
+            <div class="tool-btn" onclick="addQuestion('matrix_multi')">
+              <svg viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.3"/><path d="M2 6h14M2 10h14M6 2v14" stroke="currentColor" stroke-width="1.2"/><rect x="7.5" y="7.5" width="3" height="3" rx="0.5" fill="currentColor"/></svg>
+              <span>MX複選択</span>
+            </div>
+            <div class="tool-btn" onclick="addQuestion('text')">
+              <svg viewBox="0 0 18 18" fill="none"><rect x="2" y="6" width="14" height="6" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 9h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              <span>短文入力</span>
+            </div>
+            <div class="tool-btn" onclick="addQuestion('textarea')">
+              <svg viewBox="0 0 18 18" fill="none"><rect x="2" y="3" width="14" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M5 7h8M5 10h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              <span>長文入力</span>
+            </div>
+            <div class="tool-btn" onclick="addQuestion('image')">
+              <svg viewBox="0 0 18 18" fill="none"><rect x="2" y="3" width="14" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><circle cx="7" cy="7.5" r="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M2 13l4-3 3 2.5 3-3 4 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span>画像挿入</span>
+            </div>
+            <div class="tool-btn" onclick="addQuestion('video')">
+              <svg viewBox="0 0 18 18" fill="none"><rect x="2" y="4" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M7 7l5 2-5 2V7z" fill="currentColor"/></svg>
+              <span>動画挿入</span>
+            </div>
+            <div class="tool-btn" onclick="addQuestion('description')">
+              <svg viewBox="0 0 18 18" fill="none"><path d="M3 5h12M3 8h12M3 11h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+              <span>説明文</span>
+            </div>
+            <div class="tool-btn" onclick="addQuestion('url')">
+              <svg viewBox="0 0 18 18" fill="none"><path d="M7.5 10.5a3.5 3.5 0 0 0 5 0l2-2a3.536 3.536 0 0 0-5-5l-1 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M10.5 7.5a3.5 3.5 0 0 0-5 0l-2 2a3.536 3.536 0 0 0 5 5l1-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              <span>URL挿入</span>
+            </div>
+            <div class="tool-btn" onclick="addQuestion('branch')">
+              <svg viewBox="0 0 18 18" fill="none"><path d="M9 3v4M6 9l3 3 3-3M6 13h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span>条件分岐</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SURVEY META -->
+        <div class="survey-meta">
+          <div class="meta-label">アンケート情報</div>
+          <input class="meta-title-input" id="surveyTitle" value="顧客満足度調査 2025" placeholder="アンケートタイトル" />
+          <textarea class="meta-desc-input" id="surveyDesc" rows="2" placeholder="説明文（最初のページに表示されます）">このアンケートは当社サービスの品質向上を目的としています。ご協力をよろしくお願いいたします。</textarea>
+          <div class="meta-row">
+            <div class="meta-tag">
+              <svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.2"/><path d="M6 3.5v3l1.5 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+              所要時間: 3分
+            </div>
+            <div class="meta-tag">
+              <svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+              匿名回答
+            </div>
+            <div class="meta-tag">
+              <svg viewBox="0 0 12 12" fill="none"><path d="M6 2l1 3h3l-2.5 2 1 3L6 8.5 3.5 10l1-3L2 5h3z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+              公開中
+            </div>
+          </div>
+        </div>
+
+        <!-- QUESTIONS LIST -->
+        <div id="questionsList"></div>
+
+        <div class="add-q-area" onclick="openTypeModal()">
+          <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v6M5 8h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          設問を追加（種類を選ぶ）
+        </div>
+
+        <!-- TYPE SELECT MODAL -->
+        <div id="typeModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(26,24,37,0.45);align-items:center;justify-content:center;">
+          <div style="background:var(--surface);border-radius:var(--radius);width:480px;max-width:94vw;box-shadow:0 16px 48px rgba(0,0,0,0.2);overflow:hidden;">
+            <div style="padding:18px 20px 14px;border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;">
+              <div style="font-size:15px;font-weight:500;color:var(--text);">設問の種類を選択</div>
+              <button onclick="closeTypeModal()" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:18px;line-height:1;padding:2px 6px;">✕</button>
+            </div>
+            <div style="padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:7px;max-height:70vh;overflow-y:auto;">
+              <div class="type-choice" onclick="pickType('radio')"><div class="type-choice-icon" style="background:#e4f9f1;color:#1a8c5e;"><svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/><circle cx="10" cy="10" r="3.5" fill="currentColor"/></svg></div><div><div class="type-choice-name">ラジオボタン</div><div class="type-choice-desc">1つ選択</div></div></div>
+              <div class="type-choice" onclick="pickType('checkbox')"><div class="type-choice-icon" style="background:#d8f4ec;color:#0e7a55;"><svg viewBox="0 0 20 20" fill="none"><rect x="4" y="4" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M7 10l2.5 2.5L14 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><div class="type-choice-name">チェックボックス</div><div class="type-choice-desc">複数選択</div></div></div>
+              <div class="type-choice" onclick="pickType('scale')"><div class="type-choice-icon" style="background:#fff8e0;color:#a07010;"><svg viewBox="0 0 20 20" fill="none"><circle cx="4" cy="10" r="2" stroke="currentColor" stroke-width="1.3"/><circle cx="10" cy="10" r="2" stroke="currentColor" stroke-width="1.3"/><circle cx="16" cy="10" r="2" fill="currentColor"/><path d="M6 10h2M12 10h2" stroke="currentColor" stroke-width="1.3"/></svg></div><div><div class="type-choice-name">スケール</div><div class="type-choice-desc">数値スケール選択</div></div></div>
+              <div class="type-choice" onclick="pickType('select')"><div class="type-choice-icon" style="background:#fef3e8;color:#c17120;"><svg viewBox="0 0 20 20" fill="none"><rect x="3" y="6" width="14" height="8" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M12 10l2 2 2-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><div class="type-choice-name">プルダウン</div><div class="type-choice-desc">リストから1つ選択</div></div></div>
+              <div class="type-choice" onclick="pickType('ranking')"><div class="type-choice-icon" style="background:#f0eaff;color:#6030c0;"><svg viewBox="0 0 20 20" fill="none"><path d="M4 5h12M4 10h12M4 15h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="4" cy="5" r="1.5" fill="currentColor"/><circle cx="4" cy="10" r="1.5" fill="currentColor"/><circle cx="4" cy="15" r="1.5" fill="currentColor"/></svg></div><div><div class="type-choice-name">ランキング</div><div class="type-choice-desc">ドラッグで順位付け</div></div></div>
+              <div class="type-choice" onclick="pickType('matrix')"><div class="type-choice-icon" style="background:#e8f0ff;color:#2a4ac8;"><svg viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M3 7h14M3 11h14M7 3v14" stroke="currentColor" stroke-width="1.2"/></svg></div><div><div class="type-choice-name">マトリックス（単）</div><div class="type-choice-desc">表形式・1つ選択</div></div></div>
+              <div class="type-choice" onclick="pickType('matrix_multi')"><div class="type-choice-icon" style="background:#dce8ff;color:#1a3ab0;"><svg viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M3 7h14M3 11h14M7 3v14" stroke="currentColor" stroke-width="1.2"/><rect x="8.5" y="8.5" width="3" height="3" rx="0.5" fill="currentColor"/></svg></div><div><div class="type-choice-name">マトリックス（複）</div><div class="type-choice-desc">表形式・複数選択</div></div></div>
+              <div class="type-choice" onclick="pickType('text')"><div class="type-choice-icon" style="background:#e8ecff;color:#3a52c8;"><svg viewBox="0 0 20 20" fill="none"><rect x="3" y="7" width="14" height="6" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M6 10h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div><div><div class="type-choice-name">短文入力</div><div class="type-choice-desc">1行テキスト</div></div></div>
+              <div class="type-choice" onclick="pickType('textarea')"><div class="type-choice-icon" style="background:#ece8ff;color:#5a3abc;"><svg viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M6 8h8M6 11h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div><div><div class="type-choice-name">長文入力</div><div class="type-choice-desc">複数行テキスト</div></div></div>
+              <div class="type-choice" onclick="pickType('image')"><div class="type-choice-icon" style="background:#fce8f3;color:#b01e7a;"><svg viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/><circle cx="7.5" cy="7.5" r="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M3 14l4-3.5 3 2.5 3-3 5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><div class="type-choice-name">画像挿入</div><div class="type-choice-desc">画像と説明文</div></div></div>
+              <div class="type-choice" onclick="pickType('video')"><div class="type-choice-icon" style="background:#fce8e8;color:#b03030;"><svg viewBox="0 0 20 20" fill="none"><rect x="3" y="5" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M8 8l5 2-5 2V8z" fill="currentColor"/></svg></div><div><div class="type-choice-name">動画挿入</div><div class="type-choice-desc">YouTube URLを埋め込む</div></div></div>
+              <div class="type-choice" onclick="pickType('description')"><div class="type-choice-icon" style="background:#f0f0f0;color:#505060;"><svg viewBox="0 0 20 20" fill="none"><path d="M4 6h12M4 9.5h12M4 13h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div><div><div class="type-choice-name">説明文</div><div class="type-choice-desc">テキストのみ表示</div></div></div>
+              <div class="type-choice" onclick="pickType('url')"><div class="type-choice-icon" style="background:#e8f7ee;color:#1a7a4a;"><svg viewBox="0 0 20 20" fill="none"><path d="M8.5 12a4 4 0 0 0 5.5 0l2-2a4 4 0 0 0-5.5-5.5l-1 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M11.5 8a4 4 0 0 0-5.5 0l-2 2a4 4 0 0 0 5.5 5.5l1-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div><div><div class="type-choice-name">URLリンク</div><div class="type-choice-desc">外部リンクを埋め込む</div></div></div>
+              <div class="type-choice" onclick="pickType('branch')"><div class="type-choice-icon" style="background:#fff3e0;color:#e0851a;"><svg viewBox="0 0 20 20" fill="none"><path d="M10 3v5M7 10l3 4 3-4M7 10H5M13 10h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><div class="type-choice-name">条件分岐</div><div class="type-choice-desc">回答でスキップ</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== FULL PREVIEW MODAL ===== -->
+      <div id="fullPreviewModal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(26,24,37,0.6);align-items:center;justify-content:center;">
+        <div style="background:var(--bg);border-radius:var(--radius);width:700px;max-width:97vw;max-height:93vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:var(--surface);border-bottom:1px solid var(--border2);flex-shrink:0;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:13px;font-weight:500;color:var(--text);">回答者プレビュー</span>
+              <span style="font-size:11px;background:#e4f9f1;color:#1a8c5e;padding:2px 8px;border-radius:20px;">プレビューモード</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="display:flex;gap:2px;background:var(--surface2);border-radius:8px;padding:3px;border:1px solid var(--border2);">
+                <button onclick="setPreviewWidth('100%')" id="pvBtnFull" class="pv-size-btn active" title="PC幅">
+                  <svg viewBox="0 0 16 16" fill="none" style="width:14px;height:14px;"><rect x="2" y="4" width="12" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 12v1.5M11 12v1.5M4 13.5h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                </button>
+                <button onclick="setPreviewWidth('390px')" id="pvBtnMobile" class="pv-size-btn" title="スマホ幅">
+                  <svg viewBox="0 0 16 16" fill="none" style="width:14px;height:14px;"><rect x="4.5" y="2" width="7" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/><circle cx="8" cy="12.2" r="0.8" fill="currentColor"/></svg>
+                </button>
+              </div>
+              <button onclick="closeFullPreview()" style="background:none;border:none;cursor:pointer;color:var(--text2);width:28px;height:28px;border-radius:6px;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>
+            </div>
+          </div>
+          <div style="flex:1;overflow-y:auto;padding:28px;display:flex;justify-content:center;" id="fullPreviewScroll">
+            <div id="fullPreviewInner" style="width:100%;transition:max-width 0.25s ease;">
+              <div style="background:var(--surface);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-lg);">
+                <div id="fpHeader" style="padding:28px 32px;color:#fff;">
+                  <div style="font-size:22px;font-weight:500;margin-bottom:6px;" id="fpTitle">アンケート</div>
+                  <div style="font-size:13px;opacity:0.8;" id="fpSubtitle">全0問</div>
+                </div>
+                <div style="padding:24px 32px;display:flex;flex-direction:column;gap:22px;" id="fpBody"></div>
+                <div style="padding:0 32px 32px;">
+                  <button id="fpSubmitBtn" onclick="fpSubmit()" style="width:100%;padding:14px;border-radius:10px;font-size:15px;font-weight:500;color:#fff;border:none;cursor:pointer;font-family:var(--font);">送信する</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== PUBLISH MODAL ===== -->
+      <div id="publishModal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(26,24,37,0.6);align-items:center;justify-content:center;">
+        <div style="background:var(--surface);border-radius:var(--radius);width:480px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.25);overflow:hidden;">
+          <div style="padding:16px 20px 14px;border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-size:15px;font-weight:500;color:var(--text);">公開設定</div>
+            <button onclick="closePublishModal()" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:18px;padding:2px 8px;">✕</button>
+          </div>
+          <div style="padding:18px 20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border2);margin-bottom:14px;">
+              <div>
+                <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px;">回答受付ステータス</div>
+                <div style="font-size:12px;color:var(--text2);" id="pubStatusLabel"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--success);margin-right:5px;vertical-align:middle;"></span>公開中 · 回答を受け付けています</div>
+              </div>
+              <label class="toggle"><input type="checkbox" id="pubToggle" checked onchange="togglePubStatus()"><span class="toggle-slider"></span></label>
+            </div>
+            <div style="margin-bottom:14px;">
+              <div style="font-size:11px;font-weight:500;color:var(--text2);margin-bottom:6px;">共有URL</div>
+              <div style="display:flex;gap:8px;">
+                <input id="pubUrlInput" style="flex:1;padding:8px 12px;border-radius:var(--radius-sm);border:1px solid var(--border2);font-size:13px;font-family:var(--font);background:var(--surface2);color:var(--text);outline:none;" value="（保存後に表示されます）" readonly />
+                <button onclick="copyPubUrl()" class="btn" id="copyUrlBtn" style="font-size:13px;">コピー</button>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:11px 13px;background:#f0f4ff;border-radius:var(--radius-sm);border:1px solid #c8d4f8;margin-bottom:14px;">
+              <svg viewBox="0 0 20 20" fill="none" style="width:30px;height:30px;flex-shrink:0;"><rect x="3" y="3" width="6" height="6" rx="1" stroke="#3a52c8" stroke-width="1.5"/><rect x="11" y="3" width="6" height="6" rx="1" stroke="#3a52c8" stroke-width="1.5"/><rect x="3" y="11" width="6" height="6" rx="1" stroke="#3a52c8" stroke-width="1.5"/><rect x="12" y="12" width="2" height="2" fill="#3a52c8"/><rect x="15" y="12" width="2" height="2" fill="#3a52c8"/><rect x="12" y="15" width="2" height="2" fill="#3a52c8"/><rect x="15" y="15" width="2" height="2" fill="#3a52c8"/></svg>
+              <div><div style="font-size:12px;font-weight:500;color:#3a52c8;">QRコードで共有</div><div style="font-size:11px;color:#6b8fd4;margin-top:2px;">URLからQRコードを生成して印刷・掲示に使えます</div></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px;">
+              <div class="toggle-row" style="padding:9px 13px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border2);">
+                <span style="font-size:13px;color:var(--text);">匿名回答を許可</span>
+                <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+              </div>
+              <div class="toggle-row" style="padding:9px 13px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border2);">
+                <span style="font-size:13px;color:var(--text);">1人1回のみ回答可</span>
+                <label class="toggle"><input type="checkbox"><span class="toggle-slider"></span></label>
+              </div>
+              <div style="padding:9px 13px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border2);">
+                <div class="toggle-row" style="padding:0;margin-bottom:0;">
+                  <span style="font-size:13px;color:var(--text);">パスワード保護</span>
+                  <label class="toggle"><input type="checkbox" id="pwToggle" onchange="togglePwInput(this)"><span class="toggle-slider"></span></label>
+                </div>
+                <input id="pwInput" placeholder="パスワードを設定..." style="display:none;margin-top:8px;width:100%;padding:7px 10px;border-radius:6px;border:1px solid var(--border2);font-size:12px;font-family:var(--font);outline:none;background:var(--surface);" />
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+              <button onclick="closePublishModal()" class="btn" style="font-size:13px;">キャンセル</button>
+              <button onclick="savePublish()" class="btn btn-accent" style="font-size:13px;">保存して閉じる</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DESIGN TAB -->
+      <div id="designWrap" style="display:none;flex:1;overflow-y:auto;padding:24px;background:var(--bg);">
+        <div style="background:var(--surface);border-radius:var(--radius);padding:20px;border:1px solid var(--border2);box-shadow:var(--shadow);">
+          <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:16px;">デザイン設定</div>
+          <div class="setting-row">
+            <div class="setting-label">ヘッダー背景色</div>
+            <div class="color-swatch-row" id="headerColorSwatches">
+              <div class="swatch active" style="background:#5b52e8" data-color="#5b52e8" onclick="setHeaderColor(this)"></div>
+              <div class="swatch" style="background:#1a1825" data-color="#1a1825" onclick="setHeaderColor(this)"></div>
+              <div class="swatch" style="background:#0f6e56" data-color="#0f6e56" onclick="setHeaderColor(this)"></div>
+              <div class="swatch" style="background:#993556" data-color="#993556" onclick="setHeaderColor(this)"></div>
+              <div class="swatch" style="background:#b01e7a" data-color="#b01e7a" onclick="setHeaderColor(this)"></div>
+              <div class="swatch" style="background:#185fa5" data-color="#185fa5" onclick="setHeaderColor(this)"></div>
+              <div class="swatch" style="background:#854f0b" data-color="#854f0b" onclick="setHeaderColor(this)"></div>
+            </div>
+            <div class="color-input-row" style="margin-top:8px;">
+              <div class="color-preview" id="headerColorPreview" style="background:#5b52e8"></div>
+              <input class="small-input" id="headerColorInput" value="#5b52e8" oninput="syncColorInput('header',this.value)" placeholder="#5b52e8" />
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label">ボタン色</div>
+            <div class="color-swatch-row" id="btnColorSwatches">
+              <div class="swatch active" style="background:#5b52e8" data-color="#5b52e8" onclick="setBtnColor(this)"></div>
+              <div class="swatch" style="background:#378add" data-color="#378add" onclick="setBtnColor(this)"></div>
+              <div class="swatch" style="background:#22a06b" data-color="#22a06b" onclick="setBtnColor(this)"></div>
+              <div class="swatch" style="background:#e24b4a" data-color="#e24b4a" onclick="setBtnColor(this)"></div>
+              <div class="swatch" style="background:#e0851a" data-color="#e0851a" onclick="setBtnColor(this)"></div>
+            </div>
+            <div class="color-input-row" style="margin-top:8px;">
+              <div class="color-preview" id="btnColorPreview" style="background:#5b52e8"></div>
+              <input class="small-input" id="btnColorInput" value="#5b52e8" oninput="syncColorInput('btn',this.value)" placeholder="#5b52e8" />
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label">設問カード背景</div>
+            <div class="color-swatch-row">
+              <div class="swatch active" style="background:#ffffff;border:1px solid #ddd" data-color="#ffffff" onclick="setCardBg(this)"></div>
+              <div class="swatch" style="background:#f8f7fc" data-color="#f8f7fc" onclick="setCardBg(this)"></div>
+              <div class="swatch" style="background:#f0f4ff" data-color="#f0f4ff" onclick="setCardBg(this)"></div>
+              <div class="swatch" style="background:#f0faf6" data-color="#f0faf6" onclick="setCardBg(this)"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESPONSES TAB -->
+      <div id="responsesWrap" style="display:none;flex:1;overflow-y:auto;padding:24px;background:var(--bg);">
+        <div style="background:var(--surface);border-radius:var(--radius);padding:20px;border:1px solid var(--border2);box-shadow:var(--shadow);">
+          <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:16px;">回答集計</div>
+          <div class="stat-grid">
+            <div class="stat-card"><div class="stat-num" id="resp-tab-total">—</div><div class="stat-label">総回答数</div></div>
+            <div class="stat-card"><div class="stat-num" id="resp-tab-today">—</div><div class="stat-label">本日の新規</div></div>
+            <div class="stat-card"><div class="stat-num" id="resp-tab-week">—</div><div class="stat-label">今週の新規</div></div>
+            <div class="stat-card"><div class="stat-num" id="resp-tab-rate">—</div><div class="stat-label">完了率</div></div>
+          </div>
+          <div style="font-size:11px;font-weight:500;color:var(--text2);margin-bottom:8px;margin-top:16px;text-transform:uppercase;letter-spacing:.08em;">最近の回答者</div>
+          <div class="response-list" id="resp-tab-list">
+            <div style="padding:16px;text-align:center;font-size:13px;color:var(--text3);">読み込み中...</div>
+          </div>
+          <div style="margin-top:12px;text-align:center;">
+            <button class="btn" style="font-size:12px;" onclick="location.href='dashboard.html?id='+currentSurveyId">
+              詳細な集計を見る →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL -->
+      <div class="right-panel" id="rightPanel">
+        <div class="rp-tabs">
+          <div class="rp-tab active" onclick="switchRpTab(this,'preview')">プレビュー</div>
+          <div class="rp-tab" onclick="switchRpTab(this,'settings')">設定</div>
+        </div>
+
+        <div class="rp-body" id="rpPreview">
+          <div class="preview-frame">
+            <div class="preview-header-bar" id="previewHeader" style="background:#5b52e8;">
+              <h3 id="previewTitle">顧客満足度調査 2025</h3>
+              <p id="previewDesc">全6問 · 所要時間 約3分</p>
+            </div>
+            <div class="preview-body" id="previewBody">
+              <div class="prev-q-item">
+                <div class="pq-label">ご利用のサービスをお選びください <span class="pq-req">*</span></div>
+                <select class="prev-fake-input" style="width:100%"><option>選択...</option></select>
+              </div>
+              <div class="prev-q-item">
+                <div class="pq-label">総合評価 <span class="pq-req">*</span></div>
+                <div class="prev-radio-list">
+                  <div class="prev-r-item"><div class="prev-r-dot"></div>とても満足</div>
+                  <div class="prev-r-item"><div class="prev-r-dot checked"></div>満足</div>
+                  <div class="prev-r-item"><div class="prev-r-dot"></div>普通</div>
+                </div>
+              </div>
+              <div class="prev-q-item">
+                <div class="pq-label">ご意見をお聞かせください</div>
+                <div class="prev-fake-textarea"></div>
+              </div>
+              <button class="prev-submit-btn" id="previewSubmitBtn" style="background:#5b52e8">送信する</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="rp-body" id="rpSettings" style="display:none;">
+          <div class="setting-row">
+            <div class="setting-label">アンケートURL共有</div>
+            <div style="display:flex;gap:6px;">
+              <input class="small-input" id="settingsShareUrl" style="flex:1" value="（保存後に表示されます）" readonly />
+              <button class="btn" id="settingsCopyBtn" onclick="copySettingsUrl()" style="padding:6px 10px;font-size:12px;">コピー</button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label">回答受付</div>
+            <div class="toggle-row">
+              <span class="toggle-label">受付中</span>
+              <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label">匿名回答を許可</div>
+            <div class="toggle-row">
+              <span class="toggle-label">許可する</span>
+              <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label">1人1回のみ</div>
+            <div class="toggle-row">
+              <span class="toggle-label">制限する</span>
+              <label class="toggle"><input type="checkbox"><span class="toggle-slider"></span></label>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-label">回答後メッセージ</div>
+            <textarea class="small-input" rows="3" style="width:100%;resize:vertical;">回答ありがとうございました！いただいたご意見はサービス改善に活用させていただきます。</textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let questionCounter = 0;
+let activeCard = null;
+let headerColor = '#5b52e8';
+let btnColor = '#5b52e8';
+
+const typeLabels = {
+  select:      ['プルダウン',         'tag-select'],
+  radio:       ['ラジオボタン',       'tag-radio'],
+  checkbox:    ['チェックボックス',   'tag-radio'],
+  scale:       ['スケール',           'tag-radio-h'],
+  ranking:     ['ランキング',         'tag-text'],
+  matrix:      ['マトリックス(単)',   'tag-radio-h'],
+  matrix_multi:['マトリックス(複)',   'tag-radio-h'],
+  text:        ['短文入力',           'tag-text'],
+  textarea:    ['長文入力',           'tag-textarea'],
+  image:       ['画像挿入',           'tag-image'],
+  url:         ['URL挿入',            'tag-url'],
+  description: ['説明文',             'tag-textarea'],
+  video:       ['動画',               'tag-image'],
+  branch:      ['条件分岐',           'tag-select'],
+};
+
+const defaultOptions = {
+  select:       ['選択肢A','選択肢B','選択肢C'],
+  radio:        ['選択肢A','選択肢B','選択肢C'],
+  checkbox:     ['選択肢A','選択肢B','選択肢C'],
+  scale:        { min:1, max:5, minLabel:'まったく思わない', maxLabel:'とても思う' },
+  ranking:      ['項目A','項目B','項目C'],
+  matrix:       { cols:[], rows:[], headerInterval:5 },
+  matrix_multi: { cols:[], rows:[], headerInterval:5 },
+};
+
+// Seed questions
+const seedData = [
+  { type:'image', title:'', required:false, options:[], imageData:null, url:'' },
+  { type:'select', title:'ご利用のサービスをお選びください', required:true, options:['Aプラン','Bプラン','Cプラン'], hasBranch:true },
+  { type:'radio-h', title:'総合的にご満足いただけましたか？', required:true, options:['とても満足','満足','普通','不満','とても不満'] },
+  { type:'radio', title:'当社をどちらでお知りになりましたか？', required:false, options:['インターネット検索','SNS','知人の紹介','その他'] },
+  { type:'text', title:'お名前（任意）', required:false, options:[] },
+  { type:'textarea', title:'ご意見・ご要望をお聞かせください', required:false, options:[] },
+];
+
+function buildOptionsList(opts) {
+  return opts.map(o => `
+    <div class="option-item">
+      <span class="option-handle" draggable="true">
+        <svg viewBox="0 0 11 11" fill="none"><circle cx="3.5" cy="3.5" r="1" fill="currentColor"/><circle cx="7.5" cy="3.5" r="1" fill="currentColor"/><circle cx="3.5" cy="7.5" r="1" fill="currentColor"/><circle cx="7.5" cy="7.5" r="1" fill="currentColor"/></svg>
+      </span>
+      <input class="option-input" value="${o}" placeholder="選択肢を入力" oninput="updateTitlePreview(this)" />
+      <button class="icon-btn danger" onclick="removeOption(this)" title="削除">
+        <svg viewBox="0 0 13 13" fill="none"><path d="M3 3l7 7M10 3L3 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  `).join('');
+}
+
+function buildQuestionBody(type, q) {
+  const opts = q.options && q.options.length ? q.options : (defaultOptions[type] || []);
+  let html = '';
+
+  if(type === 'matrix' || type === 'matrix_multi') {
+    const def = defaultOptions.matrix;
+    const mCols = q.matrixCols || def.cols;
+    const mRows = q.matrixRows || def.rows;
+    const interval = q.headerInterval || def.headerInterval;
+    const id = q.id;
+    const multiLabel = type === 'matrix_multi' ? '（複数選択）' : '（1つ選択）';
+
+    html += `
+      <div class="field-row">
+        <div class="field-label">設問文（グループタイトル）</div>
+        <input class="field-input" placeholder="例：以下の項目についてお答えください" value="${q.title||''}" oninput="syncTitle(this,'${id}')" />
+      </div>
+      <div style="margin-bottom:10px;display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;background:${type==='matrix_multi'?'#dce8ff':'#e8f0ff'};color:${type==='matrix_multi'?'#1a3ab0':'#2a4ac8'};">
+        ${multiLabel}
+      </div>
+      <div class="field-row">
+        <div class="field-label">列（選択肢）<span style="font-size:10px;color:var(--text3);font-weight:400;">横に並ぶ回答選択肢</span></div>
+        <div class="options-list" id="mcols_${id}">
+          ${mCols.map(c=>`
+            <div class="option-item">
+              <span class="option-handle" draggable="true"><svg viewBox="0 0 11 11" fill="none"><circle cx="3.5" cy="3.5" r="1" fill="currentColor"/><circle cx="7.5" cy="3.5" r="1" fill="currentColor"/><circle cx="3.5" cy="7.5" r="1" fill="currentColor"/><circle cx="7.5" cy="7.5" r="1" fill="currentColor"/></svg></span>
+              <input class="option-input" value="${c}" placeholder="選択肢テキスト" />
+              <button class="icon-btn danger" onclick="removeOption(this)"><svg viewBox="0 0 13 13" fill="none"><path d="M3 3l7 7M10 3L3 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+            </div>`).join('')}
+        </div>
+        <button class="add-option-btn" onclick="addMatrixItem('mcols_${id}')">+ 列を追加</button>
+      </div>
+      <div class="field-row">
+        <div class="field-label">行（子設問）<span style="font-size:10px;color:var(--text3);font-weight:400;">縦に並ぶ質問文</span></div>
+        <div class="options-list" id="mrows_${id}">
+          ${mRows.map((r,ri)=>`
+            <div class="option-item matrix-row-item">
+              <span class="option-handle" draggable="true"><svg viewBox="0 0 11 11" fill="none"><circle cx="3.5" cy="3.5" r="1" fill="currentColor"/><circle cx="7.5" cy="3.5" r="1" fill="currentColor"/><circle cx="3.5" cy="7.5" r="1" fill="currentColor"/><circle cx="7.5" cy="7.5" r="1" fill="currentColor"/></svg></span>
+              <span class="matrix-row-num">${ri+1}</span>
+              <input class="option-input" value="${r}" placeholder="子設問テキスト" style="flex:1;" />
+              <button class="icon-btn danger" onclick="removeMatrixRow(this,'${id}')"><svg viewBox="0 0 13 13" fill="none"><path d="M3 3l7 7M10 3L3 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+            </div>`).join('')}
+        </div>
+        <button class="add-option-btn" onclick="addMatrixRow('mrows_${id}','${id}')">+ 行（子設問）を追加</button>
+      </div>
+      <div class="field-row">
+        <div class="field-label">ヘッダー繰り返し間隔</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input type="number" class="field-input" id="minterval_${id}" value="${interval}" min="1" max="20" style="width:72px;" />
+          <span style="font-size:12px;color:var(--text2);">行ごとに列ヘッダーを再表示</span>
+        </div>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">必須回答</span>
+        <label class="toggle"><input type="checkbox" ${q.required?'checked':''} onchange="toggleRequired(this,'${id}')" /><span class="toggle-slider"></span></label>
+      </div>
+      <div style="margin-top:10px;padding:10px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border2);">
+        <div style="font-size:11px;font-weight:500;color:var(--text2);margin-bottom:8px;">プレビュー（縮小）</div>
+        <div id="matrixPreview_${id}" style="overflow-x:auto;"></div>
+      </div>
+    `;
+    return html;
+  }
+
+  // ── チェックボックス ──
+  if(type === 'checkbox') {
+    const opts = q.options && q.options.length ? q.options : (defaultOptions.checkbox || []);
+    const id = q.id;
+    html += `
+      <div class="field-row">
+        <div class="field-label">設問文</div>
+        <input class="field-input" placeholder="設問を入力してください" value="${q.title||''}" oninput="syncTitle(this,'${id}')" />
+      </div>
+      <div class="field-row">
+        <div class="field-label">選択肢（複数選択可）</div>
+        <div class="options-list" id="opts_${id}">${buildOptionsList(opts)}</div>
+        <button class="add-option-btn" onclick="addOption('${id}')">+ 選択肢を追加</button>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">必須回答</span>
+        <label class="toggle"><input type="checkbox" ${q.required?'checked':''} onchange="toggleRequired(this,'${id}')" /><span class="toggle-slider"></span></label>
+      </div>
+    `;
+    return html;
+  }
+
+  // ── スケール ──
+  if(type === 'scale') {
+    const id = q.id;
+    const sMin = q.scaleMin || 1, sMax = q.scaleMax || 5;
+    const sMinL = q.scaleMinLabel || '', sMaxL = q.scaleMaxLabel || '';
+    html += `
+      <div class="field-row">
+        <div class="field-label">設問文</div>
+        <input class="field-input" placeholder="設問を入力してください" value="${q.title||''}" oninput="syncTitle(this,'${id}')" />
+      </div>
+      <div class="field-row">
+        <div class="field-label">スケール範囲</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input type="number" class="field-input" id="smin_${id}" value="${sMin}" min="1" max="10" style="width:64px;" oninput="updateScalePreview('${id}')" />
+          <span style="font-size:12px;color:var(--text2);">〜</span>
+          <input type="number" class="field-input" id="smax_${id}" value="${sMax}" min="2" max="10" style="width:64px;" oninput="updateScalePreview('${id}')" />
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-label">ラベル</div>
+        <div style="display:flex;gap:8px;">
+          <input class="field-input" id="sminl_${id}" placeholder="最小ラベル（例：まったく思わない）" value="${sMinL}" style="flex:1;" oninput="updateScalePreview('${id}')" />
+          <input class="field-input" id="smaxl_${id}" placeholder="最大ラベル（例：とても思う）" value="${sMaxL}" style="flex:1;" oninput="updateScalePreview('${id}')" />
+        </div>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">必須回答</span>
+        <label class="toggle"><input type="checkbox" ${q.required?'checked':''} onchange="toggleRequired(this,'${id}')" /><span class="toggle-slider"></span></label>
+      </div>
+      <div style="margin-top:10px;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border2);">
+        <div style="font-size:11px;font-weight:500;color:var(--text2);margin-bottom:8px;">プレビュー</div>
+        <div id="scalePreview_${id}"></div>
+      </div>
+    `;
+    return html;
+  }
+
+  // ── ランキング ──
+  if(type === 'ranking') {
+    const opts = q.options && q.options.length ? q.options : (defaultOptions.ranking || []);
+    const id = q.id;
+    html += `
+      <div class="field-row">
+        <div class="field-label">設問文</div>
+        <input class="field-input" placeholder="例：重要だと思う順に並べてください" value="${q.title||''}" oninput="syncTitle(this,'${id}')" />
+      </div>
+      <div class="field-row">
+        <div class="field-label">ランキング項目 <span style="font-size:10px;color:var(--text3);font-weight:400;">回答者がドラッグで並び替え</span></div>
+        <div class="options-list" id="opts_${id}">${buildRankingList(opts)}</div>
+        <button class="add-option-btn" onclick="addRankingItem('${id}')">+ 項目を追加</button>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">必須回答</span>
+        <label class="toggle"><input type="checkbox" ${q.required?'checked':''} onchange="toggleRequired(this,'${id}')" /><span class="toggle-slider"></span></label>
+      </div>
+    `;
+    return html;
+  }
+
+  // ── 説明文 ──
+  if(type === 'description') {
+    const id = q.id;
+    html += `
+      <div class="field-row">
+        <div class="field-label">表示テキスト</div>
+        <textarea class="field-input" rows="4" placeholder="ここに説明文や案内文を入力してください...">${q.descText||''}</textarea>
+      </div>
+      <div class="field-row">
+        <div class="field-label">テキストサイズ</div>
+        <div style="display:flex;gap:6px;">
+          ${['小','中','大'].map((s,i)=>`<label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;"><input type="radio" name="descSize_${id}" value="${['small','medium','large'][i]}" ${i===1?'checked':''} style="accent-color:var(--accent);" />${s}</label>`).join('')}
+        </div>
+      </div>
+    `;
+    return html;
+  }
+
+  // ── 動画 ──
+  if(type === 'video') {
+    const id = q.id;
+    html += `
+      <div class="field-row">
+        <div class="field-label">動画URL（YouTube / Vimeo）</div>
+        <input class="field-input" type="url" id="videoUrl_${id}" placeholder="https://www.youtube.com/watch?v=..." value="${q.videoUrl||''}" oninput="updateVideoPreview(this,'${id}')" />
+      </div>
+      <div class="field-row">
+        <div class="field-label">キャプション（任意）</div>
+        <input class="field-input" placeholder="動画の説明..." value="${q.caption||''}" />
+      </div>
+      <div id="videoPreview_${id}" style="margin-top:8px;"></div>
+    `;
+    return html;
+  }
+
+  if(type === 'image') {
+    html += `
+      <div class="field-row">
+        <div class="field-label">画像</div>
+        <label style="cursor:pointer;">
+          <input type="file" accept="image/*" onchange="loadImage(this)" />
+          <div class="image-upload-area" id="imgArea_${q.id}">
+            ${q.imageData ? `<img src="${q.imageData}" class="uploaded-img" />` : `
+              <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.5"/><circle cx="8.5" cy="8.5" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M3 16l5-4 4 3 4-4 5 5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <p>クリックまたはドロップで画像を選択</p>
+            `}
+          </div>
+        </label>
+      </div>
+      <div class="field-row">
+        <div class="field-label">説明テキスト（任意）</div>
+        <textarea class="field-input" placeholder="画像の説明や案内文を入力..." rows="2">${q.desc||''}</textarea>
+      </div>
+    `;
+  } else if(type === 'url') {
+    html += `
+      <div class="field-row">
+        <div class="field-label">表示テキスト</div>
+        <input class="field-input" placeholder="リンクのテキスト" value="${q.linkText||''}" />
+      </div>
+      <div class="field-row">
+        <div class="field-label">URL</div>
+        <input class="field-input" type="url" placeholder="https://..." value="${q.url||''}" id="urlInput_${q.id}" oninput="updateUrlPreview(this,'${q.id}')" />
+        <div class="url-preview" id="urlPreview_${q.id}">
+          <svg viewBox="0 0 13 13" fill="none"><path d="M5 9a3 3 0 0 0 4 0l1.5-1.5a3 3 0 0 0-4-4L5 5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M8 4a3 3 0 0 0-4 0L2.5 5.5a3 3 0 0 0 4 4L8 8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          <span>${q.url || 'URLを入力してください'}</span>
+        </div>
+      </div>
+    `;
+  } else if(type === 'branch') {
+    html += `
+      <div class="field-row">
+        <div class="field-label">条件分岐ルール</div>
+        <div class="branch-section">
+          <div class="branch-title">
+            <svg viewBox="0 0 13 13" fill="none"><path d="M6.5 2v4M4 8l2.5 3 2.5-3M4 8H2M9 8h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            分岐ルールを設定
+          </div>
+          <div class="branch-rule">
+            <span style="font-size:12px;color:var(--text2)">もし</span>
+            <select class="branch-select"><option>Q2 サービス選択</option><option>Q3 満足度</option></select>
+            <span style="font-size:12px;color:var(--text2)">が</span>
+            <select class="branch-select"><option>Aプラン</option><option>Bプラン</option></select>
+            <span style="font-size:12px;color:var(--text2)">なら</span>
+            <select class="branch-select"><option>Q4へスキップ</option><option>Q5へスキップ</option><option>終了</option></select>
+          </div>
+          <button class="add-option-btn" onclick="addBranchRule(this)">+ ルールを追加</button>
+        </div>
+      </div>
+    `;
+  } else {
+    // title input for normal questions
+    html += `
+      <div class="field-row">
+        <div class="field-label">設問文</div>
+        <input class="field-input" placeholder="設問を入力してください" value="${q.title||''}" oninput="syncTitle(this,'${q.id}')" />
+      </div>
+    `;
+
+    if(['select','radio','radio-h'].includes(type)) {
+      html += `
+        <div class="field-row">
+          <div class="field-label">選択肢</div>
+          <div class="options-list" id="opts_${q.id}">${buildOptionsList(opts)}</div>
+          <button class="add-option-btn" onclick="addOption('${q.id}')">+ 選択肢を追加</button>
+        </div>
+      `;
+    }
+
+    if(type === 'text') {
+      html += `
+        <div class="field-row">
+          <div class="field-label">プレースホルダー</div>
+          <input class="field-input" placeholder="例: 田中 太郎" value="${q.placeholder||''}" />
+        </div>
+      `;
+    }
+
+    if(type === 'textarea') {
+      html += `
+        <div class="field-row">
+          <div class="field-label">プレースホルダー</div>
+          <input class="field-input" placeholder="自由にお書きください..." value="${q.placeholder||''}" />
+        </div>
+      `;
+    }
+
+    html += `
+      <div class="toggle-row">
+        <span class="toggle-label">必須回答</span>
+        <label class="toggle"><input type="checkbox" ${q.required?'checked':''} onchange="toggleRequired(this,'${q.id}')" /><span class="toggle-slider"></span></label>
+      </div>
+    `;
+
+    if(['select','radio','radio-h'].includes(type)) {
+      html += `
+        <div class="branch-section" id="branchZone_${q.id}" style="display:${q.hasBranch?'block':'none'}">
+          <div class="branch-title">
+            <svg viewBox="0 0 13 13" fill="none"><path d="M6.5 2v4M4 8l2.5 3 2.5-3M4 8H2M9 8h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            条件分岐
+          </div>
+          <div class="branch-rule">
+            <select class="branch-select"><option>Aプラン</option><option>Bプラン</option><option>Cプラン</option></select>
+            <span style="font-size:12px;color:var(--text2)">→</span>
+            <select class="branch-select"><option>次の設問へ</option><option>Q4へスキップ</option><option>終了</option></select>
+          </div>
+        </div>
+        <div class="toggle-row">
+          <span class="toggle-label">条件分岐を設定</span>
+          <label class="toggle"><input type="checkbox" ${q.hasBranch?'checked':''} onchange="toggleBranch(this,'${q.id}')" /><span class="toggle-slider"></span></label>
+        </div>
+      `;
+    }
+  }
+
+  return html;
+}
+
+// ── ランキングリスト生成 ──
+function buildRankingList(opts) {
+  return opts.map((o, i) => `
+    <div class="option-item ranking-item" style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:2px 4px;">
+      <span class="option-handle" draggable="true"><svg viewBox="0 0 11 11" fill="none"><circle cx="3.5" cy="3.5" r="1" fill="currentColor"/><circle cx="7.5" cy="3.5" r="1" fill="currentColor"/><circle cx="3.5" cy="7.5" r="1" fill="currentColor"/><circle cx="7.5" cy="7.5" r="1" fill="currentColor"/></svg></span>
+      <span class="matrix-row-num">${i+1}</span>
+      <input class="option-input" value="${o}" placeholder="項目テキスト" style="flex:1;background:transparent;border:none;outline:none;" />
+      <button class="icon-btn danger" onclick="removeOption(this)"><svg viewBox="0 0 13 13" fill="none"><path d="M3 3l7 7M10 3L3 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+    </div>`).join('');
+}
+
+function addRankingItem(id) {
+  const list = document.getElementById('opts_' + id);
+  if(!list) return;
+  const count = list.querySelectorAll('.ranking-item').length + 1;
+  const item = document.createElement('div');
+  item.className = 'option-item ranking-item';
+  item.style.cssText = 'background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:2px 4px;';
+  item.innerHTML = `
+    <span class="option-handle" draggable="true"><svg viewBox="0 0 11 11" fill="none"><circle cx="3.5" cy="3.5" r="1" fill="currentColor"/><circle cx="7.5" cy="3.5" r="1" fill="currentColor"/><circle cx="3.5" cy="7.5" r="1" fill="currentColor"/><circle cx="7.5" cy="7.5" r="1" fill="currentColor"/></svg></span>
+    <span class="matrix-row-num">${count}</span>
+    <input class="option-input" placeholder="項目テキスト" style="flex:1;background:transparent;border:none;outline:none;" />
+    <button class="icon-btn danger" onclick="removeOption(this)"><svg viewBox="0 0 13 13" fill="none"><path d="M3 3l7 7M10 3L3 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+  `;
+  list.appendChild(item);
+  item.querySelector('input').focus();
+}
+
+function updateScalePreview(id) {
+  const el = document.getElementById('scalePreview_' + id);
+  if(!el) return;
+  const minV = parseInt(document.getElementById('smin_' + id)?.value) || 1;
+  const maxV = parseInt(document.getElementById('smax_' + id)?.value) || 5;
+  const minL = document.getElementById('sminl_' + id)?.value || '';
+  const maxL = document.getElementById('smaxl_' + id)?.value || '';
+  const steps = [];
+  for(let i = minV; i <= maxV; i++) steps.push(i);
+  el.innerHTML = `
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+      ${steps.map(s => `<label style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;min-width:32px;">
+        <input type="radio" name="scale_prev_${id}" style="accent-color:var(--accent);width:16px;height:16px;" />
+        <span style="font-size:11px;font-weight:500;color:var(--text2);">${s}</span>
+      </label>`).join('')}
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:4px;">
+      <span style="font-size:10px;color:var(--text3);">${minL}</span>
+      <span style="font-size:10px;color:var(--text3);">${maxL}</span>
+    </div>`;
+}
+
+function updateVideoPreview(input, id) {
+  const el = document.getElementById('videoPreview_' + id);
+  if(!el) return;
+  const url = input.value.trim();
+  if(!url) { el.innerHTML = ''; return; }
+  const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
+  if(ytMatch) {
+    el.innerHTML = `<div style="position:relative;padding-bottom:56.25%;border-radius:8px;overflow:hidden;background:#000;"><iframe src="https://www.youtube.com/embed/${ytMatch[1]}" style="position:absolute;inset:0;width:100%;height:100%;border:none;" allowfullscreen></iframe></div>`;
+  } else {
+    el.innerHTML = `<div style="padding:10px;background:var(--surface2);border-radius:6px;font-size:12px;color:var(--text2);">動画URL: ${url}</div>`;
+  }
+}
+
+function addMatrixItem(listId) {
+  const list = document.getElementById(listId);
+  if(!list) return;
+  const item = document.createElement('div');
+  item.className = 'option-item';
+  item.innerHTML = `
+    <span class="option-handle" draggable="true"><svg viewBox="0 0 11 11" fill="none"><circle cx="3.5" cy="3.5" r="1" fill="currentColor"/><circle cx="7.5" cy="3.5" r="1" fill="currentColor"/><circle cx="3.5" cy="7.5" r="1" fill="currentColor"/><circle cx="7.5" cy="7.5" r="1" fill="currentColor"/></svg></span>
+    <input class="option-input" placeholder="テキストを入力" style="flex:1;" />
+    <button class="icon-btn danger" onclick="removeOption(this)"><svg viewBox="0 0 13 13" fill="none"><path d="M3 3l7 7M10 3L3 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+  `;
+  list.appendChild(item);
+  item.querySelector('input').focus();
+  const cardEl = list.closest('.q-card');
+  if(cardEl) renderMatrixPreview(cardEl.dataset.id);
+}
+
+function addMatrixRow(listId, cardId) {
+  const list = document.getElementById(listId);
+  if(!list) return;
+  const count = list.querySelectorAll('.matrix-row-item').length + 1;
+  const item = document.createElement('div');
+  item.className = 'option-item matrix-row-item';
+  item.innerHTML = `
+    <span class="option-handle" draggable="true"><svg viewBox="0 0 11 11" fill="none"><circle cx="3.5" cy="3.5" r="1" fill="currentColor"/><circle cx="7.5" cy="3.5" r="1" fill="currentColor"/><circle cx="3.5" cy="7.5" r="1" fill="currentColor"/><circle cx="7.5" cy="7.5" r="1" fill="currentColor"/></svg></span>
+    <span class="matrix-row-num">${count}</span>
+    <input class="option-input" placeholder="子設問テキスト" style="flex:1;" />
+    <button class="icon-btn danger" onclick="removeMatrixRow(this,'${cardId}')"><svg viewBox="0 0 13 13" fill="none"><path d="M3 3l7 7M10 3L3 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+  `;
+  list.appendChild(item);
+  item.querySelector('input').focus();
+  renumberMatrixRows(listId);
+  renderMatrixPreview(cardId);
+}
+
+function removeMatrixRow(btn, cardId) {
+  const item = btn.closest('.matrix-row-item');
+  const list = item.parentNode;
+  item.remove();
+  renumberMatrixRows(list.id);
+  renderMatrixPreview(cardId);
+}
+
+function renumberMatrixRows(listId) {
+  const list = document.getElementById(listId);
+  if(!list) return;
+  list.querySelectorAll('.matrix-row-item').forEach((item, i) => {
+    const num = item.querySelector('.matrix-row-num');
+    if(num) num.textContent = i + 1;
+  });
+}
+
+function renderMatrixPreview(id) {
+  const el = document.getElementById('matrixPreview_' + id);
+  if(!el) return;
+  const colsEl = document.getElementById('mcols_' + id);
+  const rowsEl = document.getElementById('mrows_' + id);
+  const colInputs = colsEl ? [...colsEl.querySelectorAll('.option-input')].map(i=>i.value).filter(Boolean) : [];
+  const rowInputs = rowsEl ? [...rowsEl.querySelectorAll('.option-input')].map(i=>i.value).filter(Boolean) : [];
+  const intervalEl = document.getElementById('minterval_' + id);
+  const interval = intervalEl ? (parseInt(intervalEl.value)||5) : 5;
+
+  if(!colInputs.length || !rowInputs.length) {
+    el.innerHTML = '<p style="font-size:11px;color:var(--text3);">列と行を入力するとプレビューが表示されます</p>';
+    return;
+  }
+
+  const headerRow = () => `
+    <tr>
+      <td style="width:28px;"></td>
+      ${colInputs.map(c=>`<td style="text-align:center;padding:4px 3px;color:var(--text2);font-size:9.5px;font-weight:500;vertical-align:bottom;word-break:keep-all;line-height:1.3;min-width:44px;">${c}</td>`).join('')}
+    </tr>`;
+
+  let t = `<table style="border-collapse:collapse;width:100%;font-size:11px;">`;
+  rowInputs.forEach((row, i) => {
+    if(i === 0 || i % interval === 0) t += headerRow();
+    const bg = i % 2 === 0 ? 'var(--surface)' : '#f1f0f8';
+    t += `
+      <tr style="background:${bg};">
+        <td colspan="${colInputs.length+1}" style="padding:7px 5px 2px;font-size:10px;color:var(--text);line-height:1.4;"><span style="font-weight:700;color:var(--accent);margin-right:4px;">${i+1}.</span>${row}</td>
+      </tr>
+      <tr style="background:${bg};">
+        <td style="padding:3px 3px 7px;text-align:center;font-size:12px;color:var(--accent);">⇒</td>
+        ${colInputs.map(() => `<td style="text-align:center;padding:3px 2px 7px;"><div style="width:12px;height:12px;border-radius:50%;border:1.5px solid #bbb;margin:0 auto;background:#fff;"></div></td>`).join('')}
+      </tr>`;
+  });
+  t += `</table>`;
+  el.innerHTML = t;
+}
+
+document.addEventListener('input', function(e) {
+  const card = e.target.closest && e.target.closest('.q-card');
+  if(card && card.dataset.type === 'matrix') renderMatrixPreview(card.dataset.id);
+});
+
+function createCard(type, q) {
+  const [label, tagClass] = typeLabels[type] || ['不明','tag-text'];
+  const num = q.num;
+  const id = q.id;
+  const title = (type === 'image') ? '画像 + 説明テキスト' : (q.title || '（設問を入力）');
+
+  const card = document.createElement('div');
+  card.className = 'q-card';
+  card.dataset.id = id;
+  card.dataset.type = type;
+  card.innerHTML = `
+    <div class="q-card-header" onclick="toggleCard('${id}')">
+      <div class="q-drag">
+        <svg viewBox="0 0 12 12" fill="none"><circle cx="4" cy="4" r="1" fill="currentColor"/><circle cx="8" cy="4" r="1" fill="currentColor"/><circle cx="4" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="8" r="1" fill="currentColor"/></svg>
+      </div>
+      <div class="q-number" id="num_${id}">${num}</div>
+      <div class="q-type-tag ${tagClass}">${label}</div>
+      <div class="q-title-preview" id="preview_${id}">${title}</div>
+      ${q.required ? `<span class="q-required-star" id="star_${id}" title="必須">★</span>` : `<span class="q-required-star" id="star_${id}" style="opacity:0">★</span>`}
+      <div class="q-header-actions">
+        <button class="icon-btn" onclick="event.stopPropagation();duplicateCard('${id}')" title="複製">
+          <svg viewBox="0 0 13 13" fill="none"><rect x="1" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M4 4V3a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        </button>
+        <button class="icon-btn danger" onclick="event.stopPropagation();removeCard('${id}')" title="削除">
+          <svg viewBox="0 0 13 13" fill="none"><path d="M3 3l7 7M10 3L3 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="q-body">${buildQuestionBody(type, q)}</div>
+  `;
+  return card;
+}
+
+function addQuestion(type) {
+  questionCounter++;
+  const id = 'q' + Date.now();
+  const def = defaultOptions[type];
+  let q = { id, type, num: questionCounter, title: '', required: false, options: [], hasBranch: false };
+
+  if(type === 'matrix' || type === 'matrix_multi') {
+    q.matrixCols = def ? [...def.cols] : [];
+    q.matrixRows = def ? [...def.rows] : [];
+    q.headerInterval = def ? def.headerInterval : 5;
+  } else if(type === 'scale') {
+    q.scaleMin = def.min; q.scaleMax = def.max;
+    q.scaleMinLabel = def.minLabel; q.scaleMaxLabel = def.maxLabel;
+  } else if(Array.isArray(def)) {
+    q.options = [...def];
+  }
+
+  const card = createCard(type, q);
+  document.getElementById('questionsList').appendChild(card);
+  toggleCard(id);
+  renumberCards();
+  card.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function loadSeedData() {
+  // 新規作成モードのときはシードデータを読み込まない
+  if(new URLSearchParams(location.search).get('new') === '1') return;
+  seedData.forEach((q, i) => {
+    questionCounter++;
+    q.id = 'q_seed_' + i;
+    q.num = questionCounter;
+    const card = createCard(q.type, q);
+    document.getElementById('questionsList').appendChild(card);
+  });
+  toggleCard('q_seed_0');
+}
+
+function toggleCard(id) {
+  document.querySelectorAll('.q-card').forEach(c => {
+    if(c.dataset.id === id) {
+      c.classList.toggle('active');
+      activeCard = c.classList.contains('active') ? id : null;
+      if((c.dataset.type === 'matrix' || c.dataset.type === 'matrix_multi') && c.classList.contains('active')) {
+        setTimeout(() => renderMatrixPreview(id), 50);
+      }
+      if(c.dataset.type === 'scale' && c.classList.contains('active')) {
+        setTimeout(() => updateScalePreview(id), 50);
+      }
+    } else {
+      c.classList.remove('active');
+    }
+  });
+}
+
+function removeCard(id) {
+  const card = document.querySelector(`.q-card[data-id="${id}"]`);
+  if(card) { card.style.opacity='0'; card.style.transform='translateX(20px)'; card.style.transition='all 0.2s'; setTimeout(()=>{card.remove();renumberCards();},200); }
+}
+
+function duplicateCard(id) {
+  const card = document.querySelector(`.q-card[data-id="${id}"]`);
+  if(!card) return;
+  const type = card.dataset.type;
+  addQuestion(type);
+}
+
+function renumberCards() {
+  document.querySelectorAll('.q-card').forEach((c, i) => {
+    const el = document.getElementById('num_' + c.dataset.id);
+    if(el) el.textContent = i + 1;
+  });
+}
+
+function syncTitle(input, id) {
+  const el = document.getElementById('preview_' + id);
+  if(el) el.textContent = input.value || '（設問を入力）';
+}
+
+function addOption(id) {
+  const list = document.getElementById('opts_' + id);
+  if(!list) return;
+  const item = document.createElement('div');
+  item.className = 'option-item';
+  item.innerHTML = `
+    <span class="option-handle" draggable="true"><svg viewBox="0 0 11 11" fill="none"><circle cx="3.5" cy="3.5" r="1" fill="currentColor"/><circle cx="7.5" cy="3.5" r="1" fill="currentColor"/><circle cx="3.5" cy="7.5" r="1" fill="currentColor"/><circle cx="7.5" cy="7.5" r="1" fill="currentColor"/></svg></span>
+    <input class="option-input" placeholder="選択肢を入力" />
+    <button class="icon-btn danger" onclick="removeOption(this)"><svg viewBox="0 0 13 13" fill="none"><path d="M3 3l7 7M10 3L3 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+  `;
+  list.appendChild(item);
+  item.querySelector('input').focus();
+}
+
+function removeOption(btn) {
+  btn.closest('.option-item').remove();
+}
+
+function addBranchRule(btn) {
+  const container = btn.parentNode;
+  const rule = document.createElement('div');
+  rule.className = 'branch-rule';
+  rule.innerHTML = `
+    <span style="font-size:12px;color:var(--text2)">もし</span>
+    <select class="branch-select"><option>Q2 サービス選択</option></select>
+    <span style="font-size:12px;color:var(--text2)">が</span>
+    <select class="branch-select"><option>Aプラン</option></select>
+    <span style="font-size:12px;color:var(--text2)">なら</span>
+    <select class="branch-select"><option>Q4へスキップ</option><option>終了</option></select>
+    <button class="icon-btn danger" onclick="this.closest('.branch-rule').remove()"><svg viewBox="0 0 13 13" fill="none"><path d="M3 3l7 7M10 3L3 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+  `;
+  container.insertBefore(rule, btn);
+}
+
+function toggleRequired(checkbox, id) {
+  const star = document.getElementById('star_' + id);
+  if(star) star.style.opacity = checkbox.checked ? '1' : '0';
+}
+
+function toggleBranch(checkbox, id) {
+  const zone = document.getElementById('branchZone_' + id);
+  if(zone) zone.style.display = checkbox.checked ? 'block' : 'none';
+}
+
+function loadImage(input) {
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const area = input.closest('label').querySelector('.image-upload-area');
+    if(area) area.innerHTML = `<img src="${e.target.result}" class="uploaded-img" />`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function updateUrlPreview(input, id) {
+  const preview = document.getElementById('urlPreview_' + id);
+  if(preview) {
+    const span = preview.querySelector('span');
+    if(span) span.textContent = input.value || 'URLを入力してください';
+  }
+}
+
+// Tab switching
+function switchTab(el, tab) {
+  document.querySelectorAll('.topbar-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('editorWrap').style.display = tab === 'editor' ? 'block' : 'none';
+  document.getElementById('designWrap').style.display = tab === 'design' ? 'flex' : 'none';
+  document.getElementById('responsesWrap').style.display = tab === 'responses' ? 'flex' : 'none';
+  if(tab === 'responses') loadResponsesTab();
+  document.getElementById('rightPanel').style.display = tab === 'editor' ? 'flex' : 'none';
+}
+
+function switchRpTab(el, tab) {
+  document.querySelectorAll('.rp-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('rpPreview').style.display = tab === 'preview' ? 'block' : 'none';
+  document.getElementById('rpSettings').style.display = tab === 'settings' ? 'block' : 'none';
+}
+
+function previewToggle() {
+  const rp = document.querySelectorAll('.rp-tab');
+  switchRpTab(rp[0], 'preview');
+}
+
+// Color
+function setHeaderColor(el) {
+  document.querySelectorAll('#headerColorSwatches .swatch').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  headerColor = el.dataset.color;
+  document.getElementById('headerColorPreview').style.background = headerColor;
+  document.getElementById('headerColorInput').value = headerColor;
+  document.getElementById('previewHeader').style.background = headerColor;
+}
+
+function setBtnColor(el) {
+  document.querySelectorAll('#btnColorSwatches .swatch').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  btnColor = el.dataset.color;
+  document.getElementById('btnColorPreview').style.background = btnColor;
+  document.getElementById('btnColorInput').value = btnColor;
+  document.getElementById('previewSubmitBtn').style.background = btnColor;
+}
+
+function setCardBg(el) {
+  document.querySelectorAll('.q-card').forEach(c => c.style.background = el.dataset.color);
+}
+
+function syncColorInput(type, val) {
+  if(!/^#[0-9a-fA-F]{6}$/.test(val)) return;
+  if(type === 'header') {
+    document.getElementById('headerColorPreview').style.background = val;
+    document.getElementById('previewHeader').style.background = val;
+  } else {
+    document.getElementById('btnColorPreview').style.background = val;
+    document.getElementById('previewSubmitBtn').style.background = val;
+  }
+}
+
+// ── FULL PREVIEW MODAL ──
+function openFullPreview() {
+  buildFullPreview();
+  document.getElementById('fullPreviewModal').style.display = 'flex';
+}
+function closeFullPreview() {
+  document.getElementById('fullPreviewModal').style.display = 'none';
+}
+function setPreviewWidth(w) {
+  document.getElementById('fullPreviewInner').style.maxWidth = w;
+  document.getElementById('pvBtnFull').classList.toggle('active', w === '100%');
+  document.getElementById('pvBtnMobile').classList.toggle('active', w === '390px');
+}
+document.getElementById('fullPreviewModal').addEventListener('click', function(e) {
+  if(e.target === this) closeFullPreview();
+});
+
+function buildFullPreview() {
+  const title = document.getElementById('surveyTitle').value;
+  document.getElementById('fpTitle').textContent = title;
+  document.getElementById('fpHeader').style.background = headerColor;
+  document.getElementById('fpSubmitBtn').style.background = btnColor;
+
+  const cards = document.querySelectorAll('.q-card');
+  let html = '';
+  let qNum = 0;
+
+  cards.forEach(card => {
+    const type = card.dataset.type;
+    const id = card.dataset.id;
+    if(type === 'branch') return;
+
+    if(type === 'description') {
+      const ta = card.querySelector('textarea.field-input');
+      const text = ta ? ta.value : '';
+      if(text) html += `<div style="padding:14px 16px;background:var(--surface2);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;font-size:14px;color:var(--text2);line-height:1.7;white-space:pre-wrap;">${text}</div>`;
+      return;
+    }
+    if(type === 'video') {
+      const urlInput = card.querySelector('input[type=url]');
+      const url = urlInput ? urlInput.value.trim() : '';
+      const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
+      if(ytMatch) {
+        html += `<div style="position:relative;padding-bottom:56.25%;border-radius:10px;overflow:hidden;background:#000;"><iframe src="https://www.youtube.com/embed/${ytMatch[1]}" style="position:absolute;inset:0;width:100%;height:100%;border:none;" allowfullscreen></iframe></div>`;
+      } else if(url) {
+        html += `<div style="padding:12px;background:var(--surface2);border-radius:8px;font-size:13px;color:var(--text2);">🎬 ${url}</div>`;
+      }
+      return;
+    }
+    if(type === 'image') {
+      const img = card.querySelector('.uploaded-img');
+      const desc = card.querySelectorAll('textarea.field-input')[0];
+      html += `<div>`;
+      if(img) html += `<img src="${img.src}" style="width:100%;border-radius:8px;margin-bottom:10px;max-height:200px;object-fit:cover;" />`;
+      if(desc && desc.value) html += `<p style="font-size:14px;color:var(--text2);line-height:1.6;">${desc.value}</p>`;
+      html += `</div>`;
+      return;
+    }
+    if(type === 'url') {
+      const urlInput = card.querySelector('input[type=url]');
+      const textInput = card.querySelectorAll('.field-input')[0];
+      const href = urlInput ? urlInput.value : '#';
+      const label = textInput ? textInput.value : href;
+      html += `<div><a href="${href}" target="_blank" style="font-size:14px;color:var(--accent);text-decoration:underline;">🔗 ${label||href}</a></div>`;
+      return;
+    }
+
+    qNum++;
+    const titleEl = card.querySelector('.field-input[oninput*="syncTitle"]');
+    const qTitle = titleEl ? titleEl.value : '';
+    if(!qTitle) return;
+    const requiredStar = card.querySelector('.q-required-star');
+    const isReq = requiredStar && requiredStar.style.opacity !== '0';
+
+    html += `<div style="border-bottom:1px solid var(--border2);padding-bottom:18px;">`;
+    html += `<div style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:10px;">${qNum}. ${qTitle}${isReq ? ' <span style="color:var(--danger);">*</span>' : ''}</div>`;
+
+    if(type === 'text') {
+      html += `<input style="width:100%;padding:10px 13px;border-radius:8px;border:1px solid var(--border2);font-size:14px;font-family:var(--font);outline:none;background:var(--surface2);" placeholder="回答を入力..." />`;
+    } else if(type === 'textarea') {
+      html += `<textarea style="width:100%;padding:10px 13px;border-radius:8px;border:1px solid var(--border2);font-size:14px;font-family:var(--font);outline:none;background:var(--surface2);resize:vertical;min-height:80px;" placeholder="回答を入力..."></textarea>`;
+    } else if(type === 'select') {
+      const opts = [...card.querySelectorAll(`#opts_${id} .option-input`)].map(i => i.value).filter(Boolean);
+      html += `<select style="width:100%;padding:10px 13px;border-radius:8px;border:1px solid var(--border2);font-size:14px;font-family:var(--font);background:var(--surface2);outline:none;"><option value="">選択してください...</option>${opts.map(o=>`<option>${o}</option>`).join('')}</select>`;
+    } else if(type === 'radio') {
+      const opts = [...card.querySelectorAll(`#opts_${id} .option-input`)].map(i => i.value).filter(Boolean);
+      const rname = 'fp_' + id;
+      html += `<div style="display:flex;flex-direction:column;gap:8px;">${opts.map(o=>`<label style="display:flex;align-items:center;gap:9px;font-size:14px;color:var(--text);cursor:pointer;"><input type="radio" name="${rname}" style="accent-color:${btnColor};width:16px;height:16px;" />${o}</label>`).join('')}</div>`;
+    } else if(type === 'checkbox') {
+      const opts = [...card.querySelectorAll(`#opts_${id} .option-input`)].map(i => i.value).filter(Boolean);
+      html += `<div style="display:flex;flex-direction:column;gap:8px;">${opts.map(o=>`<label style="display:flex;align-items:center;gap:9px;font-size:14px;color:var(--text);cursor:pointer;"><input type="checkbox" style="accent-color:${btnColor};width:16px;height:16px;" />${o}</label>`).join('')}</div>`;
+    } else if(type === 'scale') {
+      const minV = parseInt(card.querySelector(`#smin_${id}`)?.value) || 1;
+      const maxV = parseInt(card.querySelector(`#smax_${id}`)?.value) || 5;
+      const minL = card.querySelector(`#sminl_${id}`)?.value || '';
+      const maxL = card.querySelector(`#smaxl_${id}`)?.value || '';
+      const steps = []; for(let s=minV;s<=maxV;s++) steps.push(s);
+      html += `<div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:4px;">
+          ${steps.map(s=>`<label style="display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;flex:1;">
+            <input type="radio" name="fp_scale_${id}" style="accent-color:${btnColor};width:18px;height:18px;" />
+            <span style="font-size:13px;font-weight:500;color:var(--text2);">${s}</span>
+          </label>`).join('')}
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;">
+          <span style="font-size:11px;color:var(--text3);max-width:45%;line-height:1.4;">${minL}</span>
+          <span style="font-size:11px;color:var(--text3);max-width:45%;text-align:right;line-height:1.4;">${maxL}</span>
+        </div>
+      </div>`;
+    } else if(type === 'ranking') {
+      const opts = [...card.querySelectorAll(`#opts_${id} .option-input`)].map(i => i.value).filter(Boolean);
+      const rankId = 'fp_rank_' + id;
+      html += `<div id="${rankId}" style="display:flex;flex-direction:column;gap:6px;" ondragover="fpRankDragOver(event)" ondrop="fpRankDrop(event,'${rankId}')">
+        ${opts.map((o,i)=>`<div draggable="true" ondragstart="fpRankDragStart(event)" style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;cursor:grab;transition:opacity 0.15s;">
+          <span style="min-width:22px;height:22px;border-radius:6px;background:#ede9ff;color:#5b52e8;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;" class="fp-rank-num">${i+1}</span>
+          <span style="font-size:14px;color:var(--text);flex:1;">${o}</span>
+          <svg viewBox="0 0 12 12" fill="none" style="width:14px;height:14px;opacity:0.4;"><circle cx="4" cy="3" r="1" fill="currentColor"/><circle cx="8" cy="3" r="1" fill="currentColor"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="8" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="9" r="1" fill="currentColor"/><circle cx="8" cy="9" r="1" fill="currentColor"/></svg>
+        </div>`).join('')}
+        <p style="font-size:11px;color:var(--text3);margin-top:2px;">ドラッグして順番を入れ替えてください</p>
+      </div>`;
+    } else if(type === 'radio-h') {
+      const opts = [...card.querySelectorAll(`#opts_${id} .option-input`)].map(i => i.value).filter(Boolean);
+      const rname = 'fph_' + id;
+      html += `<div style="display:flex;flex-wrap:wrap;gap:10px;">${opts.map(o=>`<label style="display:flex;align-items:center;gap:7px;font-size:14px;color:var(--text);cursor:pointer;padding:7px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--surface2);"><input type="radio" name="${rname}" style="accent-color:${btnColor};width:14px;height:14px;" />${o}</label>`).join('')}</div>`;
+    } else if(type === 'matrix' || type === 'matrix_multi') {
+      const isMulti = type === 'matrix_multi';
+      const colInputs = [...(document.getElementById('mcols_' + id)||{querySelectorAll:()=>[]}).querySelectorAll('.option-input')].map(i=>i.value).filter(Boolean);
+      const rowInputs = [...(document.getElementById('mrows_' + id)||{querySelectorAll:()=>[]}).querySelectorAll('.option-input')].map(i=>i.value).filter(Boolean);
+      const intervalEl = document.getElementById('minterval_' + id);
+      const interval = intervalEl ? (parseInt(intervalEl.value)||5) : 5;
+      if(colInputs.length && rowInputs.length) {
+        const headerRow = () => `<tr><td style="min-width:180px;"></td>${colInputs.map(c=>`<td style="text-align:center;padding:6px 4px;font-size:12px;font-weight:500;color:var(--text2);min-width:72px;vertical-align:bottom;word-break:keep-all;line-height:1.4;">${c}</td>`).join('')}</tr>`;
+        let t = `<div style="overflow-x:auto;"><table style="border-collapse:collapse;width:100%;font-size:13px;">`;
+        rowInputs.forEach((row, i) => {
+          if(i === 0 || i % interval === 0) t += headerRow();
+          const bg = i % 2 === 0 ? 'var(--surface)' : 'var(--surface2)';
+          const inputEl = isMulti
+            ? `<input type="checkbox" style="accent-color:${btnColor};width:15px;height:15px;cursor:pointer;" />`
+            : `<input type="radio" name="fp_mx_${id}_${i}" style="accent-color:${btnColor};width:15px;height:15px;cursor:pointer;" />`;
+          t += `
+            <tr style="background:${bg};">
+              <td colspan="${colInputs.length+1}" style="padding:10px 8px 3px;font-size:13px;color:var(--text);line-height:1.5;"><span style="font-weight:700;color:var(--accent);margin-right:5px;">${i+1}.</span>${row}</td>
+            </tr>
+            <tr style="background:${bg};">
+              <td style="padding:3px 6px 10px;font-size:16px;color:var(--accent);text-align:center;">⇒</td>
+              ${colInputs.map(() => `<td style="text-align:center;padding:3px 4px 10px;">${inputEl}</td>`).join('')}
+            </tr>`;
+        });
+        t += `</table></div>`;
+        html += t;
+      }
+    }
+
+    html += `</div>`;
+  });
+
+  document.getElementById('fpBody').innerHTML = html || '<p style="color:var(--text3);font-size:14px;">設問がまだ追加されていません。</p>';
+  document.getElementById('fpSubtitle').textContent = `全${qNum}問 · 所要時間 約${Math.max(1, Math.ceil(qNum * 0.5))}分`;
+}
+
+function fpSubmit() {
+  const btn = document.getElementById('fpSubmitBtn');
+  btn.textContent = '✓ 送信しました！ありがとうございました';
+  btn.style.background = '#22a06b';
+  btn.disabled = true;
+  setTimeout(() => {
+    btn.textContent = '送信する';
+    btn.style.background = btnColor;
+    btn.disabled = false;
+  }, 2500);
+}
+
+// ── PUBLISH MODAL ──
+function openPublishModal() {
+  document.getElementById('publishModal').style.display = 'flex';
+}
+function closePublishModal() {
+  document.getElementById('publishModal').style.display = 'none';
+}
+document.getElementById('publishModal').addEventListener('click', function(e) {
+  if(e.target === this) closePublishModal();
+});
+function togglePubStatus() {
+  const on = document.getElementById('pubToggle').checked;
+  const label = document.getElementById('pubStatusLabel');
+  label.innerHTML = on
+    ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--success);margin-right:5px;vertical-align:middle;"></span>公開中 · 回答を受け付けています'
+    : '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--text3);margin-right:5px;vertical-align:middle;"></span>非公開 · 回答を受け付けていません';
+  const dot = document.querySelector('.status-dot');
+  if(dot) dot.style.background = on ? 'var(--success)' : 'var(--text3)';
+}
+function copyPubUrl() {
+  const val = document.getElementById('pubUrlInput').value;
+  navigator.clipboard.writeText(val).catch(()=>{});
+  const btn = document.getElementById('copyUrlBtn');
+  btn.textContent = '✓ コピー済み';
+  setTimeout(() => { btn.textContent = 'コピー'; }, 1800);
+}
+function togglePwInput(cb) {
+  document.getElementById('pwInput').style.display = cb.checked ? 'block' : 'none';
+}
+function savePublish() {
+  closePublishModal();
+  const toast = document.createElement('div');
+  toast.textContent = '✓ 設定を保存しました';
+  toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1825;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.2);';
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2200);
+}
+function openTypeModal() {
+  const m = document.getElementById('typeModal');
+  m.style.display = 'flex';
+}
+function closeTypeModal() {
+  document.getElementById('typeModal').style.display = 'none';
+}
+function pickType(type) {
+  closeTypeModal();
+  addQuestion(type);
+}
+document.getElementById('typeModal').addEventListener('click', function(e) {
+  if(e.target === this) closeTypeModal();
+});
+
+// ── LIVE PREVIEW ──
+function buildLivePreview() {
+  const title = document.getElementById('surveyTitle').value;
+  document.getElementById('previewTitle').textContent = title;
+
+  const cards = document.querySelectorAll('.q-card');
+  const body = document.getElementById('previewBody');
+  let html = '';
+
+  cards.forEach(card => {
+    const type = card.dataset.type;
+    const id = card.dataset.id;
+    const titleEl = card.querySelector('.field-input[oninput*="syncTitle"]') || card.querySelector('.field-input');
+    const qTitle = titleEl ? titleEl.value : (card.querySelector('.q-title-preview') ? card.querySelector('.q-title-preview').textContent : '');
+    const requiredStar = card.querySelector('.q-required-star');
+    const isRequired = requiredStar && requiredStar.style.opacity !== '0' && requiredStar.textContent === '★';
+    const reqMark = isRequired ? '<span style="color:#e24b4a;">*</span>' : '';
+
+    if(type === 'image') {
+      const img = card.querySelector('.uploaded-img');
+      const desc = card.querySelectorAll('textarea.field-input')[0];
+      html += `<div class="prev-q-item">`;
+      if(img) html += `<img src="${img.src}" style="width:100%;border-radius:6px;margin-bottom:6px;max-height:100px;object-fit:cover;" />`;
+      if(desc && desc.value) html += `<div style="font-size:12px;color:var(--text2);">${desc.value}</div>`;
+      html += `</div>`;
+      return;
+    }
+    if(type === 'url') {
+      const urlInput = card.querySelector('input[type=url]');
+      const textInput = card.querySelectorAll('.field-input')[0];
+      const href = urlInput ? urlInput.value : '';
+      const label = textInput ? textInput.value : href;
+      html += `<div class="prev-q-item"><a href="${href}" style="font-size:12px;color:var(--accent);text-decoration:underline;">${label||href||'リンク'}</a></div>`;
+      return;
+    }
+    if(type === 'description') {
+      const ta = card.querySelector('textarea.field-input');
+      const text = ta ? ta.value : '';
+      if(text) html += `<div class="prev-q-item" style="padding:8px 10px;background:#f4f3f8;border-left:2px solid var(--accent);border-radius:0 6px 6px 0;font-size:11px;color:var(--text2);line-height:1.6;">${text}</div>`;
+      return;
+    }
+    if(type === 'video') {
+      const urlInput = card.querySelector('input[type=url]');
+      const url = urlInput ? urlInput.value.trim() : '';
+      const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
+      if(ytMatch) {
+        html += `<div class="prev-q-item" style="position:relative;padding-bottom:56.25%;border-radius:6px;overflow:hidden;background:#000;"><iframe src="https://www.youtube.com/embed/${ytMatch[1]}" style="position:absolute;inset:0;width:100%;height:100%;border:none;" allowfullscreen></iframe></div>`;
+      } else if(url) {
+        html += `<div class="prev-q-item" style="font-size:11px;color:var(--text2);">🎬 ${url}</div>`;
+      }
+      return;
+    }
+    if(type === 'branch') return;
+    if(!qTitle) return;
+
+    html += `<div class="prev-q-item"><div class="pq-label">${qTitle} ${reqMark}</div>`;
+
+    if(type === 'text') {
+      html += `<div class="prev-fake-input" style="color:var(--text3);font-size:11px;">テキストを入力...</div>`;
+    } else if(type === 'textarea') {
+      html += `<div class="prev-fake-textarea" style="color:var(--text3);font-size:11px;"></div>`;
+    } else if(type === 'select') {
+      const opts = [...card.querySelectorAll(`#opts_${id} .option-input`)].map(i => i.value).filter(Boolean);
+      html += `<select class="prev-fake-input" style="width:100%;"><option>選択してください...</option>${opts.map(o=>`<option>${o}</option>`).join('')}</select>`;
+    } else if(type === 'radio') {
+      const opts = [...card.querySelectorAll(`#opts_${id} .option-input`)].map(i => i.value).filter(Boolean);
+      html += `<div class="prev-radio-list">${opts.map((o,i) => `<div class="prev-r-item"><div class="prev-r-dot${i===0?' checked':''}"></div>${o}</div>`).join('')}</div>`;
+    } else if(type === 'checkbox') {
+      const opts = [...card.querySelectorAll(`#opts_${id} .option-input`)].map(i => i.value).filter(Boolean);
+      html += `<div class="prev-radio-list">${opts.map((o,i) => `<div class="prev-r-item"><div style="width:12px;height:12px;border-radius:3px;border:1.5px solid ${i===0?'#7c6af5':'#aaa'};background:${i===0?'#7c6af5':'#fff'};flex-shrink:0;"></div>${o}</div>`).join('')}</div>`;
+    } else if(type === 'scale') {
+      const minV = parseInt(card.querySelector(`#smin_${id}`)?.value)||1;
+      const maxV = parseInt(card.querySelector(`#smax_${id}`)?.value)||5;
+      const steps=[]; for(let s=minV;s<=maxV;s++) steps.push(s);
+      html += `<div style="display:flex;gap:4px;flex-wrap:wrap;">${steps.map(s=>`<div style="display:flex;flex-direction:column;align-items:center;gap:3px;min-width:24px;"><div style="width:13px;height:13px;border-radius:50%;border:1.5px solid #aaa;"></div><span style="font-size:10px;color:var(--text3);">${s}</span></div>`).join('')}</div>`;
+    } else if(type === 'ranking') {
+      const opts = [...card.querySelectorAll(`#opts_${id} .option-input`)].map(i => i.value).filter(Boolean);
+      html += `<div style="display:flex;flex-direction:column;gap:4px;">${opts.map((o,i)=>`<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:var(--surface2);border-radius:5px;border:1px solid var(--border2);font-size:11px;"><span style="min-width:16px;height:16px;border-radius:4px;background:#ede9ff;color:#5b52e8;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;">${i+1}</span>${o}</div>`).join('')}</div>`;
+    } else if(type === 'matrix' || type === 'matrix_multi') {
+      html += `<div style="font-size:10px;color:var(--text3);padding:4px 0;">表形式 (${type==='matrix_multi'?'複数選択':'1つ選択'})</div>`;
+    } else if(type === 'radio-h') {
+      const opts = [...card.querySelectorAll(`#opts_${id} .option-input`)].map(i => i.value).filter(Boolean);
+      html += `<div class="prev-radio-h">${opts.map((o,i) => `<div class="prev-r-item"><div class="prev-r-dot${i===0?' checked':''}"></div>${o}</div>`).join('')}</div>`;
+    }
+    html += `</div>`;
+  });
+
+  const qCount = cards.length;
+  document.getElementById('previewDesc').textContent = `全${qCount}問 · 所要時間 約${Math.max(1,Math.ceil(qCount*0.5))}分`;
+
+  body.innerHTML = html + `<button class="prev-submit-btn" id="previewSubmitBtn" style="background:${btnColor}">送信する</button>`;
+}
+
+// Observe mutations on questionsList to auto-update preview
+const observer = new MutationObserver(() => buildLivePreview());
+observer.observe(document.getElementById('questionsList'), { childList: true, subtree: true, characterData: true, attributes: true });
+document.getElementById('surveyTitle').addEventListener('input', buildLivePreview);
+
+// ============================================================
+// DRAG & DROP
+// ============================================================
+
+// ── 共通ユーティリティ ──
+let dragSrc = null;   // ドラッグ中の要素
+let dragType = null;  // 'card' | 'option'
+
+function clearDragStyles() {
+  document.querySelectorAll('.card-dragging,.card-drag-over,.dragging,.drag-over-top,.drag-over-bottom')
+    .forEach(el => el.classList.remove('card-dragging','card-drag-over','dragging','drag-over-top','drag-over-bottom'));
+}
+
+// ── ランキング D&D（フルプレビュー内） ──
+let fpRankDragItem = null;
+function fpRankDragStart(e) {
+  fpRankDragItem = e.currentTarget;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain','rank');
+  setTimeout(()=>{ if(fpRankDragItem) fpRankDragItem.style.opacity='0.35'; },0);
+}
+function fpRankDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const item = e.target.closest('[draggable="true"]');
+  if(!item || item === fpRankDragItem) return;
+  const list = item.parentElement;
+  const rect = item.getBoundingClientRect();
+  if(e.clientY < rect.top + rect.height/2) {
+    list.insertBefore(fpRankDragItem, item);
+  } else {
+    list.insertBefore(fpRankDragItem, item.nextSibling);
+  }
+  // 番号更新
+  list.querySelectorAll('.fp-rank-num').forEach((n,i)=> n.textContent = i+1);
+}
+function fpRankDrop(e, listId) {
+  e.preventDefault();
+  if(fpRankDragItem) { fpRankDragItem.style.opacity='1'; fpRankDragItem=null; }
+}
+document.addEventListener('dragend', e => {
+  if(fpRankDragItem) { fpRankDragItem.style.opacity='1'; fpRankDragItem=null; }
+}, true);
+
+// ── 設問カードのD&D ──
+function initCardDrag(card) {
+  const handle = card.querySelector('.q-drag');
+  if(!handle) return;
+  handle.setAttribute('draggable', 'true');
+  handle.addEventListener('dragstart', e => {
+    dragSrc = card;
+    dragType = 'card';
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', card.dataset.id);
+    qList.appendChild(cardDropIndicator); // DOMに追加しておく
+    setTimeout(() => card.classList.add('card-dragging'), 0);
+  });
+  handle.addEventListener('dragend', () => {
+    cardDropIndicator.style.display = 'none';
+    clearDragStyles();
+    dragSrc = null;
+    renumberCards();
+    buildLivePreview();
+  });
+}
+
+const qList = document.getElementById('questionsList');
+
+// カードD&D用インジケーター
+const cardDropIndicator = document.createElement('div');
+cardDropIndicator.id = 'cardDropIndicator';
+cardDropIndicator.style.cssText = 'height:3px;background:var(--accent);border-radius:2px;margin:2px 0;display:none;transition:none;pointer-events:none;';
+
+qList.addEventListener('dragover', e => {
+  if(dragType !== 'card') return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.q-card').forEach(c => c.classList.remove('card-drag-over'));
+
+  const target = e.target.closest('.q-card');
+  if(!target || target === dragSrc) {
+    cardDropIndicator.style.display = 'none';
+    return;
+  }
+  const rect = target.getBoundingClientRect();
+  cardDropIndicator.style.display = 'block';
+  if(e.clientY < rect.top + rect.height / 2) {
+    qList.insertBefore(cardDropIndicator, target);
+  } else {
+    qList.insertBefore(cardDropIndicator, target.nextSibling);
+  }
+});
+
+qList.addEventListener('dragleave', e => {
+  if(dragType !== 'card') return;
+  if(!qList.contains(e.relatedTarget)) {
+    cardDropIndicator.style.display = 'none';
+  }
+});
+
+qList.addEventListener('drop', e => {
+  if(dragType !== 'card' || !dragSrc) return;
+  e.preventDefault();
+  cardDropIndicator.style.display = 'none';
+  const target = e.target.closest('.q-card');
+  if(!target || target === dragSrc) { clearDragStyles(); return; }
+
+  const rect = target.getBoundingClientRect();
+  if(e.clientY < rect.top + rect.height / 2) {
+    qList.insertBefore(dragSrc, target);
+  } else {
+    qList.insertBefore(dragSrc, target.nextSibling);
+  }
+  clearDragStyles();
+  renumberCards();
+  buildLivePreview();
+});
+
+// ── オプション（選択肢・マトリックス列/行）のD&D ──
+// options-list にイベント委譲
+document.addEventListener('dragstart', e => {
+  // e.targetがsvg/circle等の子要素になる場合もあるのでcomposedPathから探す
+  const handle = e.composedPath().find(el => el.classList && el.classList.contains('option-handle'));
+  if(!handle) return;
+  const item = handle.closest('.option-item');
+  if(!item) return;
+  dragSrc  = item;
+  dragType = 'option';
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', 'option');
+  setTimeout(() => item.classList.add('dragging'), 0);
+});
+
+document.addEventListener('dragend', e => {
+  if(dragType !== 'option') return;
+  clearDragStyles();
+  // マトリックス行なら採番し直す
+  if(dragSrc) {
+    const list = dragSrc.closest('.options-list');
+    if(list && list.id && list.id.startsWith('mrows_')) {
+      renumberMatrixRows(list.id);
+      const card = list.closest('.q-card');
+      if(card) renderMatrixPreview(card.dataset.id);
+    }
+  }
+  dragSrc  = null;
+  dragType = null;
+  buildLivePreview();
+});
+
+document.addEventListener('dragover', e => {
+  if(dragType !== 'option') return;
+  const item = e.composedPath().find(el => el.classList && el.classList.contains('option-item'));
+  if(!item || item === dragSrc) return;
+  if(!dragSrc || item.closest('.options-list') !== dragSrc.closest('.options-list')) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+
+  document.querySelectorAll('.drag-over-top,.drag-over-bottom')
+    .forEach(el => el.classList.remove('drag-over-top','drag-over-bottom'));
+
+  const rect = item.getBoundingClientRect();
+  if(e.clientY < rect.top + rect.height / 2) {
+    item.classList.add('drag-over-top');
+  } else {
+    item.classList.add('drag-over-bottom');
+  }
+});
+
+document.addEventListener('dragleave', e => {
+  if(dragType !== 'option') return;
+  const item = e.composedPath().find(el => el.classList && el.classList.contains('option-item'));
+  if(item) item.classList.remove('drag-over-top','drag-over-bottom');
+});
+
+document.addEventListener('drop', e => {
+  if(dragType !== 'option' || !dragSrc) return;
+  const item = e.composedPath().find(el => el.classList && el.classList.contains('option-item'));
+  if(!item || item === dragSrc) return;
+  const list = dragSrc.closest('.options-list');
+  if(!list || item.closest('.options-list') !== list) return;
+  e.preventDefault();
+
+  const rect = item.getBoundingClientRect();
+  if(e.clientY < rect.top + rect.height / 2) {
+    list.insertBefore(dragSrc, item);
+  } else {
+    list.insertBefore(dragSrc, item.nextSibling);
+  }
+  clearDragStyles();
+
+  if(list.id && list.id.startsWith('mrows_')) {
+    renumberMatrixRows(list.id);
+    const card = list.closest('.q-card');
+    if(card) renderMatrixPreview(card.dataset.id);
+  }
+  buildLivePreview();
+});
+
+// ── カード追加時にD&Dを初期化 ──
+const _origCreateCard = createCard;
+// createCard後にinitCardDragを呼ぶためMutationObserverで監視
+const cardDragObserver = new MutationObserver(mutations => {
+  mutations.forEach(m => {
+    m.addedNodes.forEach(node => {
+      if(node.classList && node.classList.contains('q-card')) {
+        initCardDrag(node);
+      }
+    });
+  });
+});
+cardDragObserver.observe(qList, { childList: true });
+
+// 既存カードに初期化
+document.querySelectorAll('.q-card').forEach(initCardDrag);
+
+// Init
+// URLパラメータにidがある場合はDB優先ロード
+const _urlId = new URLSearchParams(location.search).get('id');
+const _isNew = new URLSearchParams(location.search).get('new') === '1';
+
+// パラメータなしで開いたらlist.htmlにリダイレクト
+if(!_urlId && !_isNew) { location.replace('list.html'); }
+
+if(_isNew) {
+  // 新規作成：空の状態で開始
+  document.getElementById('questionsList').innerHTML = '';
+  questionCounter = 0;
+  document.getElementById('surveyTitle').value = '';
+  document.getElementById('surveyDesc').value  = '';
+  document.querySelector('.topbar-title').textContent = '新規アンケート';
+  document.querySelector('.topbar-sub').innerHTML = '<span class="status-dot" style="background:#aba8bb;"></span>下書き';
+  document.getElementById('previewTitle').textContent = '新規アンケート';
+  document.getElementById('previewDesc').textContent  = '全0問';
+  const newBtn = document.getElementById('newFormBtn');
+  if(newBtn) newBtn.classList.add('active');
+} else if(_urlId) {
+  // 既存アンケートをDBからロード
+  document.getElementById('questionsList').innerHTML = '';
+  questionCounter = 0;
+  setTimeout(()=>loadSurveyFromDB(_urlId), 200);
+} else {
+  // パラメータなし：デモ用シードデータ
+  loadSeedData();
+}
+setTimeout(() => {
+  buildLivePreview();
+  document.querySelectorAll('.q-card').forEach(initCardDrag);
+}, 100);
+
+
+// ============================================================
+// Supabase連携
+// ============================================================
+const SB_URL = 'https://sqagawuubujrcyxkmwbg.supabase.co';
+const SB_KEY = 'sb_publishable_wmDriUhLXbcQcdd5UZMivQ_k7oe2HYC';
+
+async function sbFetch(path, opts={}) {
+  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+    headers: {
+      apikey: SB_KEY,
+      Authorization: `Bearer ${SB_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
+      ...(opts.headers||{})
+    },
+    ...opts
+  });
+  if(!res.ok) throw new Error(await res.text());
+  return res.status === 204 ? null : res.json();
+}
+
+// 現在編集中のsurveyId
+let currentSurveyId = null;
+
+// ── DBからアンケートをロード ──
+async function loadSurveyFromDB(id) {
+  try {
+    const [survey] = await sbFetch(`surveys?id=eq.${id}&select=*`);
+    if(!survey) return;
+    currentSurveyId = survey.id;
+    document.getElementById('surveyTitle').value = survey.title;
+    document.getElementById('surveyDesc').value  = survey.description || '';
+    document.querySelector('.topbar-title').textContent = survey.title;
+    document.querySelector('.topbar-sub').innerHTML = `<span class="status-dot" style="background:${survey.status==='active'?'#22a06b':'#aba8bb'};border-radius:50%;display:inline-block;width:6px;height:6px;margin-right:4px;"></span>${survey.status==='active'?'公開中':'下書き'}`;
+
+    // ヘッダー・ボタン色を反映
+    if(survey.header_color) {
+      headerColor = survey.header_color;
+      document.getElementById('previewHeader').style.background = headerColor;
+      document.getElementById('headerColorInput').value = headerColor;
+      document.getElementById('headerColorPreview').style.background = headerColor;
+    }
+    if(survey.btn_color) {
+      btnColor = survey.btn_color;
+      document.getElementById('previewSubmitBtn').style.background = btnColor;
+      document.getElementById('btnColorInput').value = btnColor;
+      document.getElementById('btnColorPreview').style.background = btnColor;
+    }
+
+    // ── 設問・選択肢をDBから復元 ──
+    const questions = await sbFetch(`questions?survey_id=eq.${id}&select=*,options(*)&order=position`);
+    document.getElementById('questionsList').innerHTML = '';
+    questionCounter = 0;
+
+    for(const q of questions) {
+      questionCounter++;
+      const qObj = {
+        id:       `q_db_${questionCounter}`,
+        num:      questionCounter,
+        title:    q.title || '',
+        required: q.required || false,
+        type:     q.type,
+        options:  (q.options||[]).filter(o=>o.option_type==='choice').sort((a,b)=>a.position-b.position).map(o=>o.label),
+        matrixCols: (q.options||[]).filter(o=>o.option_type==='matrix_col').sort((a,b)=>a.position-b.position).map(o=>o.label),
+        matrixRows: (q.options||[]).filter(o=>o.option_type==='matrix_row').sort((a,b)=>a.position-b.position).map(o=>o.label),
+        headerInterval: q.settings?.interval || 5,
+        scaleMin: q.settings?.min || 1,
+        scaleMax: q.settings?.max || 5,
+        scaleMinLabel: q.settings?.minLabel || '',
+        scaleMaxLabel: q.settings?.maxLabel || '',
+        dbId: q.id, // 元のDB上のIDを保持
+      };
+
+      const card = createCard(q.type, qObj);
+      if(!card) continue;
+      document.getElementById('questionsList').appendChild(card);
+      initCardDrag(card);
+    }
+
+    renumberCards();
+    buildLivePreview();
+    updateShareUrls();
+    // 回答タブの件数を更新
+    if(currentSurveyId) {
+      sbFetch(`responses?survey_id=eq.${currentSurveyId}&completed=eq.true&select=id`).then(res => {
+        const btn = document.getElementById('resp-tab-btn');
+        if(btn) btn.textContent = `回答 (${Array.isArray(res) ? res.length : 0})`;
+      }).catch(()=>{});
+    }
+    showToastIndex(`「${survey.title}」を読み込みました`);
+  } catch(e) {
+    console.error('loadSurvey error:', e);
+    showToastIndex('⚠ 読み込みエラー: ' + e.message);
+  }
+}
+
+// ── アンケートを保存 ──
+async function saveSurveyToDB() {
+  const title = document.getElementById('surveyTitle').value || '新規アンケート';
+  const desc  = document.getElementById('surveyDesc').value || '';
+  const cards = document.querySelectorAll('.q-card');
+
+  try {
+    // 1. surveysテーブルに保存（新規 or 更新）
+    let survey;
+    if(currentSurveyId) {
+      [survey] = await sbFetch(`surveys?id=eq.${currentSurveyId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ title, description: desc, header_color: headerColor, btn_color: btnColor, updated_at: new Date().toISOString() })
+      });
+    } else {
+      [survey] = await sbFetch('surveys', {
+        method: 'POST',
+        body: JSON.stringify({ title, description: desc, header_color: headerColor, btn_color: btnColor, status: 'draft' })
+      });
+      currentSurveyId = survey.id;
+      history.replaceState(null, '', `?id=${survey.id}`);
+    }
+
+    // 2. 既存設問を削除して再挿入
+    await sbFetch(`questions?survey_id=eq.${currentSurveyId}`, { method: 'DELETE' });
+
+    const questions = [];
+    cards.forEach((card, pos) => {
+      const type = card.dataset.type;
+      // 設問タイトルを取得（oninput="syncTitle"を持つinput）
+      const titleEl = card.querySelector('.field-input[oninput*="syncTitle"]');
+      const qTitle  = titleEl ? titleEl.value : '';
+      const reqStar = card.querySelector('.q-required-star');
+      const required = reqStar && reqStar.style.opacity !== '0';
+
+      // type別設定
+      let settings = {};
+      if(type === 'scale') {
+        settings = {
+          min: parseInt(card.querySelector(`[id^="smin_"]`)?.value)||1,
+          max: parseInt(card.querySelector(`[id^="smax_"]`)?.value)||5,
+          minLabel: card.querySelector(`[id^="sminl_"]`)?.value||'',
+          maxLabel: card.querySelector(`[id^="smaxl_"]`)?.value||'',
+        };
+      } else if(type === 'video') {
+        settings = { url: card.querySelector('input[type=url]')?.value||'' };
+      } else if(type === 'description') {
+        settings = { text: card.querySelector('textarea.field-input')?.value||'' };
+      } else if(type === 'matrix' || type === 'matrix_multi') {
+        settings = {
+          interval: parseInt(card.querySelector(`[id^="minterval_"]`)?.value)||5
+        };
+      }
+
+      questions.push({ survey_id: currentSurveyId, type, title: qTitle, position: pos, required, settings });
+    });
+
+    if(questions.length) {
+      const savedQs = await sbFetch('questions', { method: 'POST', body: JSON.stringify(questions) });
+
+      // 3. 選択肢を保存
+      const allOptions = [];
+      cards.forEach((card, pos) => {
+        const type = card.dataset.type;
+        const q = savedQs[pos];
+        if(!q) return;
+
+        if(['select','radio','checkbox','ranking'].includes(type)) {
+          const opts = [...card.querySelectorAll(`[id^="opts_"] .option-input`)]
+            .map((inp,i) => ({ question_id: q.id, label: inp.value.trim(), position: i, option_type: 'choice' }))
+            .filter(o => o.label !== ''); // 空の選択肢を除外
+          allOptions.push(...opts);
+        } else if(type === 'matrix' || type === 'matrix_multi') {
+          const cols = [...card.querySelectorAll(`[id^="mcols_"] .option-input`)]
+            .map((inp,i) => ({ question_id: q.id, label: inp.value.trim(), position: i, option_type: 'matrix_col' }))
+            .filter(o => o.label !== '');
+          const rows = [...card.querySelectorAll(`[id^="mrows_"] .option-input`)]
+            .map((inp,i) => ({ question_id: q.id, label: inp.value.trim(), position: i, option_type: 'matrix_row' }))
+            .filter(o => o.label !== '');
+          allOptions.push(...cols, ...rows);
+        }
+      });
+
+      if(allOptions.length) {
+        console.log('options送信:', allOptions.length, '件', allOptions);
+        await sbFetch('options', { method: 'POST', body: JSON.stringify(allOptions) });
+      } else {
+        console.log('options: 送信対象なし（選択肢型の設問がないか、値が空）');
+      }
+    }
+
+    showToastIndex('✓ 保存しました');
+    updateShareUrls();
+  } catch(e) {
+    showToastIndex('⚠ 保存エラー: ' + e.message);
+    console.error(e);
+  }
+}
+
+// ── 公開状態を切り替え ──
+async function togglePublish(isActive) {
+  if(!currentSurveyId) { showToastIndex('先に保存してください'); return; }
+  const status = isActive ? 'active' : 'draft';
+  await sbFetch(`surveys?id=eq.${currentSurveyId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status })
+  });
+  showToastIndex(isActive ? '✓ 公開しました' : '下書きに戻しました');
+}
+
+
+// ── 回答ページプレビュー（IDパラメータ付き） ──
+function openAnswerPreview() {
+  const base = location.origin + location.pathname.replace('index.html','');
+  const url  = currentSurveyId
+    ? `${base}answer.html?survey=${currentSurveyId}`
+    : `${base}answer.html`;
+  window.open(url, '_blank');
+}
+
+// ── 共有URLを動的生成して各所に反映 ──
+function updateShareUrls() {
+  if(!currentSurveyId) return;
+  const base = location.origin + location.pathname.replace('index.html','');
+  const url  = `${base}answer.html?survey=${currentSurveyId}`;
+  const pubInput      = document.getElementById('pubUrlInput');
+  const settingsInput = document.getElementById('settingsShareUrl');
+  if(pubInput)      pubInput.value      = url;
+  if(settingsInput) settingsInput.value = url;
+}
+
+// ── 設定パネルのコピー ──
+function copySettingsUrl() {
+  const val = document.getElementById('settingsShareUrl')?.value || '';
+  if(!val || val.includes('保存後')) { showToastIndex('先にアンケートを保存してください'); return; }
+  navigator.clipboard.writeText(val).then(() => {
+    const btn = document.getElementById('settingsCopyBtn');
+    if(btn) { btn.textContent = '✓ コピー済み'; setTimeout(()=>btn.textContent='コピー', 1800); }
+  }).catch(() => {
+    // clipboardAPIが使えない環境用フォールバック
+    const input = document.getElementById('settingsShareUrl');
+    input.select();
+    document.execCommand('copy');
+    const btn = document.getElementById('settingsCopyBtn');
+    if(btn) { btn.textContent = '✓ コピー済み'; setTimeout(()=>btn.textContent='コピー', 1800); }
+  });
+}
+
+// ── 公開設定モーダルのコピー（上書き） ──
+function copyPubUrl() {
+  const val = document.getElementById('pubUrlInput')?.value || '';
+  if(!val || val.includes('保存後')) { showToastIndex('先にアンケートを保存してください'); return; }
+  navigator.clipboard.writeText(val).then(() => {
+    const btn = document.getElementById('copyUrlBtn');
+    if(btn) { btn.textContent = '✓ コピー済み'; setTimeout(()=>btn.textContent='コピー', 1800); }
+  }).catch(() => {
+    const input = document.getElementById('pubUrlInput');
+    input.select();
+    document.execCommand('copy');
+    const btn = document.getElementById('copyUrlBtn');
+    if(btn) { btn.textContent = '✓ コピー済み'; setTimeout(()=>btn.textContent='コピー', 1800); }
+  });
+}
+
+// ── サイドバーのアンケート一覧をDBから生成 ──
+async function loadSidebarSurveys() {
+  try {
+    const surveys = await sbFetch('surveys?select=id,title,responses(id)&order=created_at.desc&limit=10');
+const container = document.getElementById('sb-surveys');
+    if(!container) return;
+    const currentId = new URLSearchParams(location.search).get('id');
+    container.innerHTML = surveys.map(s => `
+      <div class="sb-item ${s.id === currentId ? 'active' : ''}"
+           onclick="location.href='index.html?id=${s.id}'"
+           style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+        <svg viewBox="0 0 16 16" fill="none" style="flex-shrink:0;"><path d="M3 3h10v10H3z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M6 6h4M6 9h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <span style="overflow:hidden;text-overflow:ellipsis;">${s.title}</span>
+      </div>`).join('');
+  } catch(e) {
+    console.error('sidebar load error:', e);
+  }
+}
+loadSidebarSurveys();
+
+function showToastIndex(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1825;color:#fff;padding:11px 22px;border-radius:10px;font-size:13px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.2);transition:opacity .2s;';
+  document.body.appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(),200); }, 2400);
+}
+
+// ── 回答タブ：DBから実際の回答を取得 ──
+async function loadResponsesTab() {
+  if(!currentSurveyId) {
+    document.getElementById('resp-tab-list').innerHTML =
+      '<div style="padding:16px;text-align:center;font-size:13px;color:var(--text3);">先にアンケートを保存してください</div>';
+    return;
+  }
+  try {
+    const responses = await sbFetch(`responses?survey_id=eq.${currentSurveyId}&completed=eq.true&select=*&order=finished_at.desc`);
+    const total = responses.length;
+    const now   = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekAgo = new Date(now - 7*24*60*60*1000);
+    const todayCount = responses.filter(r => new Date(r.finished_at) >= today).length;
+    const weekCount  = responses.filter(r => new Date(r.finished_at) >= weekAgo).length;
+
+    document.getElementById('resp-tab-total').textContent = total;
+    document.getElementById('resp-tab-today').textContent = todayCount;
+    document.getElementById('resp-tab-week').textContent  = weekCount;
+    document.getElementById('resp-tab-rate').textContent  = total > 0 ? '100%' : '—';
+
+    // タブの件数表示を更新
+    const respTabBtn = document.getElementById('resp-tab-btn');
+    if(respTabBtn) respTabBtn.textContent = `回答 (${total})`;
+
+    const COLORS = ['#5b52e8','#0f6e56','#993556','#185fa5','#854f0b','#e0851a'];
+    const list = document.getElementById('resp-tab-list');
+    if(total === 0) {
+      list.innerHTML = '<div style="padding:16px;text-align:center;font-size:13px;color:var(--text3);">回答がまだありません</div>';
+      return;
+    }
+    list.innerHTML = responses.slice(0,10).map((r, i) => {
+      const name = r.respondent_name || `回答者 ${i+1}`;
+      const col  = COLORS[i % COLORS.length];
+      const date = new Date(r.finished_at);
+      const diff = Math.round((now - date) / 60000);
+      const timeStr = diff < 60 ? `${diff}分前`
+                    : diff < 1440 ? `${Math.round(diff/60)}時間前`
+                    : `${Math.round(diff/1440)}日前`;
+      const isNew = diff < 60;
+      return `<div class="resp-item">
+        <div class="resp-avatar" style="background:${col};">${name.charAt(0)}</div>
+        <div><div class="resp-name">${name}</div><div class="resp-time">${timeStr}</div></div>
+        ${isNew ? '<div class="resp-dot"></div>' : ''}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    console.error('loadResponsesTab error:', e);
+    document.getElementById('resp-tab-list').innerHTML =
+      '<div style="padding:16px;text-align:center;font-size:13px;color:var(--text3);">読み込みエラー</div>';
+  }
+}
+
+
+(function() {
+  const params = new URLSearchParams(location.search);
+  const isNew = params.get('new') === '1';
+  document.querySelectorAll('.sb-item').forEach(el => el.classList.remove('active'));
+  if(isNew) {
+    const newBtn = document.getElementById('newFormBtn');
+    if(newBtn) newBtn.classList.add('active');
+  }
+})();
+</script>
+</body>
+</html>

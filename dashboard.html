@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>回答集計 — Survey Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --accent:#5b52e8; --accent-light:#ede9ff;
+  --success:#22a06b; --warn:#e0851a; --danger:#e24b4a;
+  --bg:#f4f3f8; --surface:#fff; --surface2:#f8f7fc;
+  --border:rgba(0,0,0,0.08); --text:#1a1825; --text2:#6b677e; --text3:#aba8bb;
+  --radius:12px; --radius-sm:8px;
+  --shadow:0 2px 12px rgba(91,82,232,0.08);
+  --font:'DM Sans','Noto Sans JP',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;}
+.app{display:flex;height:100vh;}
+
+/* SIDEBAR */
+.sidebar{width:220px;background:#1a1825;flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;position:relative;}
+.sidebar::before{content:'';position:absolute;top:-60px;right:-30px;width:160px;height:160px;background:radial-gradient(circle,rgba(91,82,232,.35) 0%,transparent 70%);pointer-events:none;}
+.sb-logo{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.07);}
+.logo-row{display:flex;align-items:center;gap:8px;}
+.logo-icon{width:26px;height:26px;border-radius:7px;background:var(--accent);display:flex;align-items:center;justify-content:center;}
+.logo-icon svg{width:13px;height:13px;}
+.logo-text{font-size:15px;font-weight:500;color:#fff;}
+.logo-sub{font-size:10px;color:rgba(255,255,255,.35);margin-top:2px;margin-left:34px;}
+.sb-nav{padding:10px 0;flex:1;}
+.sb-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;margin:1px 6px;font-size:12px;color:rgba(255,255,255,.55);cursor:pointer;}
+.sb-item:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.85);}
+.sb-item.active{background:rgba(91,82,232,.25);color:#fff;border-left:2px solid #7c75ef;}
+.sb-item svg{width:13px;height:13px;opacity:.7;flex-shrink:0;}
+.sb-item.active svg{opacity:1;}
+.sb-badge{margin-left:auto;font-size:10px;background:var(--accent);color:#fff;padding:1px 6px;border-radius:8px;}
+.sb-sec{padding:10px 10px 4px;font-size:9px;font-weight:500;color:rgba(255,255,255,.25);letter-spacing:.1em;text-transform:uppercase;}
+.sb-footer{padding:10px;border-top:1px solid rgba(255,255,255,.06);}
+.sb-user{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;cursor:pointer;}
+.sb-user:hover{background:rgba(255,255,255,.06);}
+.sb-avatar{width:26px;height:26px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#fff;}
+.sb-user .name{font-size:11px;color:rgba(255,255,255,.8);font-weight:500;}
+.sb-user .role{font-size:9px;color:rgba(255,255,255,.3);}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;height:52px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.topbar-back{color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:4px;font-size:12px;padding:4px 7px;border-radius:5px;}
+.topbar-back:hover{background:var(--surface2);}
+.topbar-title{font-size:14px;font-weight:500;flex:1;}
+.topbar-sub{font-size:11px;color:var(--text3);}
+.status-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--success);margin-right:4px;}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--radius-sm);font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:var(--font);transition:all .15s;}
+.btn:hover{background:var(--surface2);}
+.btn-accent{background:var(--accent);color:#fff;border-color:var(--accent);}
+.btn-accent:hover{background:#4a42d4;}
+.btn svg{width:12px;height:12px;}
+
+/* BODY */
+.body{flex:1;overflow-y:auto;padding:20px;}
+.body::-webkit-scrollbar{width:5px;}
+.body::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);border-radius:3px;}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;}
+.kpi-card{background:var(--surface);border-radius:var(--radius);padding:16px;border:1px solid var(--border);box-shadow:var(--shadow);}
+.kpi-label{font-size:11px;color:var(--text3);margin-bottom:6px;display:flex;align-items:center;gap:5px;}
+.kpi-label svg{width:12px;height:12px;}
+.kpi-num{font-size:26px;font-weight:700;color:var(--text);line-height:1;}
+.kpi-change{font-size:11px;margin-top:5px;}
+.kpi-change.up{color:var(--success);}
+.kpi-change.down{color:var(--danger);}
+
+/* GRID 2COL */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.grid3{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px;}
+.card{background:var(--surface);border-radius:var(--radius);padding:16px;border:1px solid var(--border);box-shadow:var(--shadow);}
+.card-title{font-size:12px;font-weight:500;color:var(--text);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;}
+.card-title span{font-size:10px;color:var(--text3);font-weight:400;}
+
+/* BAR CHART */
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.bar-label{font-size:12px;color:var(--text2);min-width:80px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bar-track{flex:1;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:4px;transition:width .6s ease;}
+.bar-pct{font-size:11px;color:var(--text3);min-width:34px;text-align:right;}
+
+/* DONUT */
+.donut-wrap{display:flex;align-items:center;gap:14px;}
+.donut-legend{display:flex;flex-direction:column;gap:6px;flex:1;}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);}
+.legend-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+
+/* TIMELINE */
+.timeline-svg-wrap { width:100%; overflow:hidden; }
+
+/* RESPONSE TABLE */
+.resp-table{width:100%;border-collapse:collapse;}
+.resp-table th{font-size:11px;color:var(--text3);text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);font-weight:500;}
+.resp-table td{font-size:12px;color:var(--text2);padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.resp-table tr:last-child td{border-bottom:none;}
+.resp-table tr:hover td{background:var(--surface2);}
+.avatar-sm{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#fff;flex-shrink:0;}
+.badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;}
+.badge-green{background:#e4f9f1;color:#1a8c5e;}
+.badge-yellow{background:#fef3e8;color:#c17120;}
+.badge-gray{background:var(--surface2);color:var(--text3);}
+
+/* SCORE DISPLAY */
+.score-big{font-size:42px;font-weight:700;color:var(--accent);line-height:1;}
+.score-sub{font-size:12px;color:var(--text3);margin-top:4px;}
+.score-row{display:flex;align-items:baseline;gap:8px;}
+.score-prev{font-size:13px;color:var(--text3);}
+
+/* FILTER BAR */
+.filter-bar{display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
+.filter-tag{display:flex;align-items:center;gap:4px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);font-size:11px;cursor:pointer;background:var(--surface);color:var(--text2);transition:all .15s;}
+.filter-tag:hover,.filter-tag.active{background:var(--accent-light);border-color:var(--accent);color:var(--accent);}
+.search-box{flex:1;min-width:160px;max-width:220px;padding:6px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);font-size:12px;font-family:var(--font);background:var(--surface);color:var(--text);outline:none;}
+.search-box:focus{border-color:var(--accent);}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-logo">
+      <div class="logo-row">
+        <div class="logo-icon"><svg viewBox="0 0 15 15" fill="none"><path d="M2 4h11M2 7.5h7M2 11h9" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg></div>
+        <span class="logo-text">Survey Builder</span>
+      </div>
+      <div class="logo-sub">アンケートビルダー</div>
+    </div>
+        <div class="sb-nav">
+      <div class="sb-sec">メニュー</div>
+      <div class="sb-item" onclick="location.href='list.html'">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1.5" fill="currentColor"/><rect x="9" y="2" width="5" height="5" rx="1.5" fill="currentColor" opacity=".4"/><rect x="2" y="9" width="5" height="5" rx="1.5" fill="currentColor" opacity=".4"/><rect x="9" y="9" width="5" height="5" rx="1.5" fill="currentColor" opacity=".4"/></svg>
+        アンケート一覧
+      </div>
+      <div class="sb-item active" onclick="location.href='responses.html'">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M2 12V6l4-3 4 3v6H2z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M10 12V8h4v4" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+        回答データ
+      </div>
+      <div class="sb-item" onclick="location.href='respondents.html'">
+        <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="7" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M2 13c0-2.21 2.686-4 6-4s6 1.79 6 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        回答者一覧
+      </div>
+      <div class="sb-sec" style="margin-top:6px;">アンケート</div>
+      <div id="sb-survey-list"></div>
+      <div class="sb-item" onclick="location.href='index.html?new=1'" style="margin-top:4px;">
+        <svg viewBox="0 0 16 16" fill="none" style="flex-shrink:0;"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/><path d="M8 5v6M5 8h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        新規作成
+      </div>
+    </div>
+    <div class="sb-footer">
+      <div class="sb-user">
+        <div class="sb-avatar">田</div>
+        <div><div class="name">田中 管理者</div><div class="role">Admin</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-back" onclick="location.href='responses.html'" style="cursor:pointer;">
+        <svg viewBox="0 0 14 14" fill="none" style="width:12px;height:12px;"><path d="M9 3L5 7l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>一覧
+      </div>
+      <div style="width:1px;height:18px;background:var(--border);"></div>
+      <div style="flex:1;">
+        <div class="topbar-title">顧客満足度調査 2025 — 回答集計</div>
+        <div class="topbar-sub"><span class="status-dot"></span>公開中 · 最終更新 5分前</div>
+      </div>
+      <button class="btn" onclick="downloadCSV()"><svg viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>CSV出力</button>
+      <button class="btn" id="btn-respondents" onclick="goRespondents()"><svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="6" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M2 12c0-2 2-3.5 5-3.5s5 1.5 5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>回答者一覧</button>
+      <button class="btn btn-accent" onclick="downloadPDF()"><svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.4"/><path d="M7 4v4l2.5 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>レポート</button>
+    </div>
+
+    <div class="body">
+      <!-- FILTER BAR -->
+      <div class="filter-bar">
+        <input class="search-box" placeholder="🔍  回答者を検索..." />
+      </div>
+
+      <!-- KPI -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label"><svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.2"/></svg>総回答数</div>
+          <div class="kpi-num" id="kpi-total">—</div>
+          <div class="kpi-change" id="kpi-total-change"></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label"><svg viewBox="0 0 12 12" fill="none"><path d="M2 10V4l4-3 4 3v6" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>完了率</div>
+          <div class="kpi-num" id="kpi-rate">—</div>
+          <div class="kpi-change" id="kpi-rate-change"></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label"><svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.2"/><path d="M6 3.5v3l1.5 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>平均回答時間</div>
+          <div class="kpi-num" id="kpi-time">—</div>
+          <div class="kpi-change" id="kpi-time-change"></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label"><svg viewBox="0 0 12 12" fill="none"><path d="M6 2l1 3h3l-2.5 2 1 3L6 8.5 3.5 10l1-3L2 5h3z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>NPS スコア</div>
+          <div class="kpi-num" id="kpi-nps" style="color:var(--success);">—</div>
+          <div class="kpi-change" id="kpi-nps-change"></div>
+        </div>
+      </div>
+
+      <!-- ROW 1 -->
+      <div class="grid2">
+        <!-- 満足度分布 -->
+        <div class="card">
+          <div class="card-title" id="satisfaction-title">回答集計 <span id="satisfaction-n"></span></div>
+<div id="satisfaction-bars"><div style="padding:20px;text-align:center;font-size:13px;color:var(--text3);">読み込み中...</div></div>
+        </div>
+
+        <!-- サービス内訳 -->
+        <div class="card">
+          <div class="card-title" id="donut-title">選択肢集計 <span id="donut-n"></span></div>
+          <div class="donut-wrap" id="donut-wrap">
+            <div style="padding:16px;text-align:center;font-size:13px;color:var(--text3);">読み込み中...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 2 -->
+      <div class="grid3">
+        <!-- 推移グラフ -->
+        <div class="card">
+          <div class="card-title">回答数推移（直近14日）<span>日次</span></div>
+          <div class="timeline-svg-wrap">
+            <svg id="timelineChart" width="100%" height="auto" viewBox="0 0 420 190" preserveAspectRatio="xMidYMid meet" style="display:block;overflow:visible;"></svg>
+          </div>
+        </div>
+
+        <!-- NPS -->
+        <div class="card" style="display:flex;flex-direction:column;justify-content:space-between;">
+          <div class="card-title">NPS スコア</div>
+          <div id="nps-content" style="text-align:center;padding:16px 0;">
+            <div class="score-big" id="nps-score">—</div>
+            <div class="score-sub" id="nps-sub">データがありません</div>
+          </div>
+          <div id="nps-bars"></div>
+        </div>
+      </div>
+
+      <!-- RESPONSE LIST -->
+      <div class="card">
+        <div class="card-title">最近の回答一覧 <span id="resp-list-count"></span></div>
+        <table class="resp-table">
+          <thead>
+            <tr>
+              <th>回答者</th>
+              <th>プラン</th>
+              <th>満足度</th>
+              <th>NPS</th>
+              <th>回答時間</th>
+              <th>日時</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="respTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// 回答推移グラフはloadDashboard内でDB連携描画
+const FONT = "'DM Sans','Noto Sans JP',sans-serif";
+// 回答者テーブル
+// ── CSV出力（DB連携版） ──
+function downloadCSV() {
+  const rows = [...document.querySelectorAll('#respTableBody tr')];
+  const BOM = '\uFEFF';
+  const headers = ['回答者', '第1回答', '第2回答', '日時'];
+  const csvRows = rows.map(tr => {
+    const cells = [...tr.querySelectorAll('td')].map(td => `"${td.textContent.trim().replace(/"/g,'""')}"`);
+    return cells.join(',');
+  }).filter(r => r);
+  const csv = BOM + [headers.join(','), ...csvRows].join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `回答データ_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  showToast('✓ CSVをダウンロードしました');
+}
+
+// ── PDF生成（jsPDF） ──
+function downloadPDF() {
+  const btn = document.querySelector('.btn-accent');
+  const orig = btn.textContent;
+  btn.textContent = '生成中...';
+  btn.disabled = true;
+
+  // jsPDFを動的ロード
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  script.onload = () => buildPDF(btn, orig);
+  script.onerror = () => {
+    showToast('⚠ PDF生成に失敗しました（ネットワークを確認してください）');
+    btn.textContent = orig; btn.disabled = false;
+  };
+  document.head.appendChild(script);
+}
+
+function buildPDF(btn, orig) {
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+
+    const accentR=91, accentG=82, accentB=232;
+    const gray1=26, gray2=107, gray3=171;
+    const pageW = 210, margin = 18;
+
+    // ── ヘッダーバー ──
+    doc.setFillColor(accentR, accentG, accentB);
+    doc.rect(0, 0, pageW, 24, 'F');
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(14);
+    doc.setTextColor(255,255,255);
+    doc.text('Survey Builder', margin, 11);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(9);
+    doc.setTextColor(200,198,245);
+    doc.text('Survey Report', margin, 17);
+
+    // タイトル
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(18);
+    doc.setTextColor(gray1,gray1,gray1+4);
+    doc.text('Customer Satisfaction 2025', margin, 36);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(9);
+    doc.setTextColor(gray2,gray2,gray2);
+    doc.text(`Generated: ${new Date().toLocaleDateString('ja-JP')}`, margin, 42);
+
+    // 区切り線
+    doc.setDrawColor(220,218,240);
+    doc.setLineWidth(0.4);
+    doc.line(margin, 46, pageW-margin, 46);
+
+    // ── KPIカード（実際の値を使用） ──
+    const kpis = [
+      { label:'Total Responses', value: document.getElementById('kpi-total')?.textContent || '—', sub:'' },
+      { label:'Completion Rate',  value: document.getElementById('kpi-rate')?.textContent  || '—', sub:'' },
+      { label:'Avg. Duration',    value: document.getElementById('kpi-time')?.textContent  || '—', sub:'' },
+      { label:'NPS Score',        value: document.getElementById('kpi-nps')?.textContent   || '—', sub:'' },
+    ];
+    const kpiW = (pageW - margin*2 - 9) / 4;
+    kpis.forEach((k, i) => {
+      const kx = margin + i*(kpiW+3);
+      const ky = 50;
+      doc.setFillColor(248,247,252);
+      doc.roundedRect(kx, ky, kpiW, 22, 2, 2, 'F');
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(7);
+      doc.setTextColor(gray3,gray3,gray3);
+      doc.text(k.label, kx+4, ky+6);
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(15);
+      doc.setTextColor(accentR, accentG, accentB);
+      doc.text(k.value, kx+4, ky+15);
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(6.5);
+      doc.setTextColor(gray2,gray2,gray2);
+      doc.text(k.sub, kx+4, ky+20);
+    });
+
+    // ── 満足度バーチャート ──
+    let cy = 82;
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(10);
+    doc.setTextColor(gray1,gray1,gray1+4);
+    doc.text('Q2 Overall Satisfaction', margin, cy);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(gray2,gray2,gray2);
+    doc.text(`n=${document.getElementById('kpi-total')?.textContent||'—'}`, pageW-margin, cy, { align:'right' });
+    cy += 5;
+
+    const satisfaction = [
+      { label:'Very Satisfied', pct:42, color:[91,82,232] },
+      { label:'Satisfied',      pct:33, color:[124,117,239] },
+      { label:'Neutral',        pct:17, color:[171,168,187] },
+      { label:'Dissatisfied',   pct:8,  color:[226,75,74] },
+      { label:'Very Dissatisfied', pct:0, color:[200,197,210] },
+    ];
+    const barTrackW = pageW - margin*2 - 38;
+    satisfaction.forEach(s => {
+      doc.setFontSize(8);
+      doc.setTextColor(gray2,gray2,gray2);
+      doc.text(s.label, margin, cy+3.5);
+      // track
+      doc.setFillColor(240,238,248);
+      doc.roundedRect(margin+38, cy, barTrackW, 5, 1.5, 1.5, 'F');
+      // fill
+      if(s.pct > 0) {
+        doc.setFillColor(...s.color);
+        doc.roundedRect(margin+38, cy, barTrackW*(s.pct/100), 5, 1.5, 1.5, 'F');
+      }
+      doc.setFontSize(7.5);
+      doc.setTextColor(gray2,gray2,gray2);
+      doc.text(`${s.pct}%`, pageW-margin, cy+3.8, { align:'right' });
+      cy += 9;
+    });
+
+    // ── プラン内訳 ──
+    cy += 4;
+    doc.setDrawColor(220,218,240);
+    doc.line(margin, cy, pageW-margin, cy);
+    cy += 6;
+
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(10);
+    doc.setTextColor(gray1,gray1,gray1+4);
+    doc.text('Q1 Service Plan Distribution', margin, cy);
+    cy += 5;
+
+    const plans = [
+      { label:'Plan A', count:10, pct:42, color:[91,82,232] },
+      { label:'Plan B', count:8,  pct:33, color:[124,117,239] },
+      { label:'Plan C', count:6,  pct:25, color:[171,168,187] },
+    ];
+    plans.forEach(p => {
+      doc.setFillColor(...p.color);
+      doc.roundedRect(margin, cy, 3, 7, 1, 1, 'F');
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(gray1,gray1,gray1);
+      doc.text(p.label, margin+6, cy+5);
+      doc.setTextColor(gray2,gray2,gray2);
+      doc.text(`${p.count}件 (${p.pct}%)`, margin+30, cy+5);
+      cy += 10;
+    });
+
+    // ── 回答者テーブル ──
+    cy += 4;
+    doc.setDrawColor(220,218,240);
+    doc.line(margin, cy, pageW-margin, cy);
+    cy += 6;
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(10);
+    doc.setTextColor(gray1,gray1,gray1+4);
+    doc.text('Recent Respondents', margin, cy);
+    cy += 5;
+
+    // ヘッダー行
+    doc.setFillColor(248,247,252);
+    doc.rect(margin, cy, pageW-margin*2, 6, 'F');
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(7);
+    doc.setTextColor(gray3,gray3,gray3);
+    const cols = [{x:margin+2,w:38,t:'Name'},{x:margin+42,w:22,t:'Plan'},{x:margin+66,w:28,t:'Satisfaction'},{x:margin+96,w:14,t:'NPS'},{x:margin+112,w:20,t:'Duration'},{x:margin+134,w:24,t:'Date'}];
+    cols.forEach(c => doc.text(c.t, c.x, cy+4));
+    cy += 7;
+
+    respondents.forEach((r, ri) => {
+      if(ri%2===1) { doc.setFillColor(252,251,255); doc.rect(margin, cy-1, pageW-margin*2, 7, 'F'); }
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(gray1,gray1,gray1+4);
+      doc.text(r.name,  cols[0].x, cy+4);
+      doc.setTextColor(gray2,gray2,gray2);
+      doc.text(r.plan,  cols[1].x, cy+4);
+      doc.text(r.score, cols[2].x, cy+4);
+      const nc = r.nps>=9?[34,160,107]:r.nps>=7?[224,133,26]:[226,75,74];
+      doc.setTextColor(...nc);
+      doc.setFont('helvetica','bold');
+      doc.text(String(r.nps), cols[3].x, cy+4);
+      doc.setFont('helvetica','normal');
+      doc.setTextColor(gray2,gray2,gray2);
+      doc.text(r.time, cols[4].x, cy+4);
+      doc.text(r.date, cols[5].x, cy+4);
+      cy += 7;
+    });
+
+    // ── フッター ──
+    doc.setDrawColor(220,218,240);
+    doc.line(margin, 280, pageW-margin, 280);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(7);
+    doc.setTextColor(gray3,gray3,gray3);
+    doc.text('Survey Builder — Confidential', margin, 285);
+    doc.text('Page 1 / 1', pageW-margin, 285, {align:'right'});
+
+    // 保存
+    doc.save(`顧客満足度調査2025_レポート_${new Date().toISOString().slice(0,10)}.pdf`);
+    showToast('✓ PDFをダウンロードしました');
+  } catch(e) {
+    showToast('⚠ PDF生成でエラーが発生しました');
+    console.error(e);
+  } finally {
+    btn.textContent = orig;
+    btn.disabled = false;
+  }
+}
+
+// ── トースト通知 ──
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(8px);background:#1a1825;color:#fff;padding:11px 22px;border-radius:10px;font-size:13px;font-family:var(--font);z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.25);opacity:0;transition:opacity .2s,transform .2s;';
+  document.body.appendChild(t);
+  requestAnimationFrame(() => { t.style.opacity='1'; t.style.transform='translateX(-50%) translateY(0)'; });
+  setTimeout(() => { t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(8px)'; setTimeout(()=>t.remove(), 200); }, 2400);
+}
+
+// ============================================================
+// Supabase 集計データ読み込み
+// ============================================================
+const SB_URL_D = 'https://sqagawuubujrcyxkmwbg.supabase.co';
+const SB_KEY_D = 'sb_publishable_wmDriUhLXbcQcdd5UZMivQ_k7oe2HYC';
+async function sbGet(path) {
+  const res = await fetch(`${SB_URL_D}/rest/v1/${path}`, {
+    headers: { apikey: SB_KEY_D, Authorization: `Bearer ${SB_KEY_D}`, 'Content-Type': 'application/json' }
+  });
+  if(!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+const SURVEY_ID_D = new URLSearchParams(location.search).get('id') || null;
+if(!SURVEY_ID_D) { location.replace('responses.html'); }
+
+async function loadDashboard() {
+  const surveyId = SURVEY_ID_D || new URLSearchParams(location.search).get('id');
+  if(!surveyId) return;
+
+  try {
+    // ── アンケート情報 ──
+    const [survey] = await sbGet(`surveys?id=eq.${surveyId}&select=*`);
+    if(survey) {
+      document.querySelector('.topbar-title').textContent = `${survey.title} — 回答集計`;
+      const shareLink = `${location.origin}${location.pathname.replace('dashboard.html','answer.html')}?survey=${surveyId}`;
+      const shareAnchor = document.querySelector('.topbar a[href*="answer.html"]');
+      if(shareAnchor) shareAnchor.href = shareLink;
+    }
+
+    // ── 回答セッション ──
+    const responses = await sbGet(`responses?survey_id=eq.${surveyId}&completed=eq.true&select=*&order=finished_at.desc`);
+    const total = responses.length;
+
+    // ── KPI更新 ──
+    document.getElementById('kpi-total').textContent = total;
+    document.getElementById('kpi-rate').textContent  = total > 0 ? '100%' : '—';
+    document.getElementById('kpi-time').textContent  = '—';
+    document.getElementById('kpi-nps').textContent   = total > 0 ? '集計中' : '—';
+
+    // ── 回答者テーブル ──
+    const tbody = document.getElementById('respTableBody');
+    if(total === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3);">回答がまだありません</td></tr>';
+      document.getElementById('satisfaction-bars').innerHTML = '<div style="padding:16px;text-align:center;font-size:13px;color:var(--text3);">回答がまだありません</div>';
+      return;
+    }
+
+    // ── 回答データ取得 ──
+    const responseIds = responses.map(r=>r.id).join(',');
+    const answers = await sbGet(`answers?response_id=in.(${responseIds})&select=*`);
+
+    // ── 設問一覧を取得（回答の意味を解釈するため） ──
+    const questions = await sbGet(`questions?survey_id=eq.${surveyId}&select=id,title,type,position&order=position`);
+
+    // ── 設問ごとの回答を集計 ──
+    const qStats = {};
+    questions.forEach(q => { qStats[q.id] = { title: q.title, type: q.type, values: [] }; });
+    answers.forEach(a => {
+      if(a.question_id && qStats[a.question_id]) {
+        if(a.values && a.values.length) qStats[a.question_id].values.push(...a.values);
+        else if(a.value) qStats[a.question_id].values.push(a.value);
+      }
+    });
+
+    // ── 満足度バーグラフ（最初の選択式設問を使用） ──
+    const choiceQ = questions.find(q => ['radio','select','checkbox'].includes(q.type));
+    if(choiceQ && qStats[choiceQ.id]?.values.length) {
+      const vals = qStats[choiceQ.id].values;
+      const counts = {};
+      vals.forEach(v => counts[v] = (counts[v]||0) + 1);
+      const total_v = vals.length;
+      const colors = ['#5b52e8','#7c75ef','#aba8bb','#e24b4a','#c8c5f5'];
+      document.getElementById('satisfaction-title').innerHTML = `${choiceQ.title} <span id="satisfaction-n">n=${total}</span>`;
+      document.getElementById('satisfaction-bars').innerHTML = Object.entries(counts).map(([label, count], i) => {
+        const pct = Math.round(count/total_v*100);
+        return `<div class="bar-row">
+          <div class="bar-label" style="min-width:80px;font-size:12px;">${label}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${colors[i%colors.length]};"></div></div>
+          <div class="bar-pct">${pct}%</div>
+        </div>`;
+      }).join('');
+    } else {
+      document.getElementById('satisfaction-bars').innerHTML = '<div style="padding:16px;text-align:center;font-size:13px;color:var(--text3);">集計データがありません</div>';
+    }
+
+    document.getElementById('resp-list-count').textContent = `全${total}件`;
+
+    // ── NPS（スケール設問の回答から計算）──
+    const scaleQ = questions.find(q => q.type === 'scale');
+    if(scaleQ && qStats[scaleQ.id]?.values.length) {
+      const scores = qStats[scaleQ.id].values.map(Number).filter(n => !isNaN(n));
+      const promoters  = scores.filter(n => n >= 9).length;
+      const detractors = scores.filter(n => n <= 6).length;
+      const total_s = scores.length;
+      const nps = total_s > 0 ? Math.round((promoters - detractors) / total_s * 100) : 0;
+      const promoterPct  = total_s > 0 ? Math.round(promoters / total_s * 100) : 0;
+      const detractorPct = total_s > 0 ? Math.round(detractors / total_s * 100) : 0;
+      const neutralPct   = 100 - promoterPct - detractorPct;
+      document.getElementById('nps-score').textContent = (nps >= 0 ? '+' : '') + nps;
+      document.getElementById('nps-sub').textContent = `推奨者 ${promoterPct}% — 中立 ${neutralPct}% — 批判者 ${detractorPct}%`;
+      document.getElementById('nps-bars').innerHTML = `
+        <div class="bar-row" style="margin-bottom:5px;"><div class="bar-label" style="min-width:52px;font-size:11px;">推奨者</div><div class="bar-track"><div class="bar-fill" style="width:${promoterPct}%;background:#22a06b;"></div></div><div class="bar-pct">${promoterPct}%</div></div>
+        <div class="bar-row" style="margin-bottom:5px;"><div class="bar-label" style="min-width:52px;font-size:11px;">中立者</div><div class="bar-track"><div class="bar-fill" style="width:${neutralPct}%;background:#aba8bb;"></div></div><div class="bar-pct">${neutralPct}%</div></div>
+        <div class="bar-row"><div class="bar-label" style="min-width:52px;font-size:11px;">批判者</div><div class="bar-track"><div class="bar-fill" style="width:${detractorPct}%;background:#e24b4a;"></div></div><div class="bar-pct">${detractorPct}%</div></div>`;
+      document.getElementById('kpi-nps').textContent = (nps >= 0 ? '+' : '') + nps;
+    } else {
+      document.getElementById('nps-score').textContent = '—';
+      document.getElementById('nps-sub').textContent = 'スケール設問の回答がありません';
+    }
+
+    // ── 回答推移グラフ（直近14日・DB連携） ──
+    const svgEl = document.getElementById('timelineChart');
+    if(svgEl) {
+      svgEl.innerHTML = '';
+      const today = new Date();
+      const days = Array.from({length:14}, (_,i) => {
+        const d = new Date(today);
+        d.setDate(today.getDate() - (13 - i));
+        return d;
+      });
+      const dayCounts = days.map(d => {
+        const ds = d.toISOString().slice(0,10);
+        return responses.filter(r => r.finished_at?.slice(0,10) === ds).length;
+      });
+      const svgW2=420, padB2=28, padT2=22, padX2=10, chartH2=140;
+      const svgH2 = padT2 + chartH2 + padB2;
+      const maxVal2 = Math.max(...dayCounts, 1);
+      const n2 = dayCounts.length;
+      const slotW2 = (svgW2 - padX2*2) / n2;
+      const barW2 = Math.max(slotW2 * 0.55, 6);
+      svgEl.setAttribute('viewBox', `0 0 ${svgW2} ${svgH2}`);
+      svgEl.setAttribute('height', svgH2);
+
+      dayCounts.forEach((v, i) => {
+        const bh = Math.max(Math.round((v / maxVal2) * chartH2), v > 0 ? 4 : 0);
+        const x  = padX2 + i * slotW2 + (slotW2 - barW2) / 2;
+        const barTop = padT2 + chartH2 - bh;
+        const isLast = i === n2 - 1;
+
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', x.toFixed(1));
+        rect.setAttribute('y', barTop.toFixed(1));
+        rect.setAttribute('width', barW2.toFixed(1));
+        rect.setAttribute('height', bh.toFixed(1));
+        rect.setAttribute('fill', isLast ? '#5b52e8' : '#c8c5f5');
+        rect.setAttribute('rx', '3');
+        svgEl.appendChild(rect);
+
+        if(v > 0) {
+          const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          txt.setAttribute('x', (x + barW2/2).toFixed(1));
+          txt.setAttribute('y', (barTop - 5).toFixed(1));
+          txt.setAttribute('text-anchor', 'middle');
+          txt.setAttribute('font-size', '11');
+          txt.setAttribute('font-weight', '500');
+          txt.setAttribute('font-family', FONT);
+          txt.setAttribute('fill', isLast ? '#5b52e8' : '#9996b0');
+          txt.textContent = v;
+          svgEl.appendChild(txt);
+        }
+
+        if(i === 0 || i === n2-1) {
+          const lbl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          lbl.setAttribute('x', (x + barW2/2).toFixed(1));
+          lbl.setAttribute('y', (svgH2 - 4).toFixed(1));
+          lbl.setAttribute('text-anchor', i===0 ? 'start' : 'end');
+          lbl.setAttribute('font-size', '10');
+          lbl.setAttribute('font-weight', '400');
+          lbl.setAttribute('font-family', FONT);
+          lbl.setAttribute('fill', '#9996b0');
+          lbl.textContent = `${days[i].getMonth()+1}/${days[i].getDate()}`;
+          svgEl.appendChild(lbl);
+        }
+      });
+    }
+
+    // ── ドーナツチャート（選択式設問を集計） ──
+    const donutQ = questions.find(q => ['radio','select','checkbox'].includes(q.type));
+    const donutWrap = document.getElementById('donut-wrap');
+    if(donutQ && qStats[donutQ.id]?.values.length) {
+      const vals = qStats[donutQ.id].values;
+      const counts = {};
+      vals.forEach(v => counts[v] = (counts[v]||0) + 1);
+      const total_d = vals.length;
+      const DCOLORS = ['#5b52e8','#7c75ef','#aba8bb','#e24b4a','#c8c5f5','#0f6e56'];
+      const entries = Object.entries(counts);
+      const circumference = 2 * Math.PI * 28;
+      let offset = -44;
+      const segments = entries.map(([label, count], i) => {
+        const pct  = count / total_d;
+        const dash = (pct * circumference).toFixed(1);
+        const gap  = (circumference - pct * circumference).toFixed(1);
+        const seg  = `<circle cx="40" cy="40" r="28" fill="none" stroke="${DCOLORS[i%DCOLORS.length]}" stroke-width="14" stroke-dasharray="${dash} ${gap}" stroke-dashoffset="${offset.toFixed(1)}" stroke-linecap="round"/>`;
+        offset -= pct * circumference;
+        return { seg, label, count, pct: Math.round(pct*100), color: DCOLORS[i%DCOLORS.length] };
+      });
+      document.getElementById('donut-title').innerHTML = `${donutQ.title} <span>n=${total}</span>`;
+      donutWrap.innerHTML = `
+        <svg viewBox="0 0 80 80" style="width:80px;height:80px;flex-shrink:0;">
+          <circle cx="40" cy="40" r="28" fill="none" stroke="#e8ecff" stroke-width="14"/>
+          ${segments.map(s=>s.seg).join('')}
+          <text x="40" y="44" text-anchor="middle" font-size="12" font-weight="600" fill="#1a1825">${total_d}</text>
+        </svg>
+        <div class="donut-legend">
+          ${segments.map(s=>`<div class="legend-item"><div class="legend-dot" style="background:${s.color};border-radius:50%;width:8px;height:8px;flex-shrink:0;"></div>${s.label} — ${s.count}件 (${s.pct}%)</div>`).join('')}
+        </div>`;
+    } else {
+      donutWrap.innerHTML = '<div style="padding:16px;text-align:center;font-size:13px;color:var(--text3);">集計データがありません</div>';
+    }
+
+    const COLORS = ['#5b52e8','#0f6e56','#993556','#185fa5','#854f0b','#e0851a'];
+    tbody.innerHTML = responses.slice(0,20).map((r, i) => {
+      const rAnswers = answers.filter(a => a.response_id === r.id);
+      const firstAns = rAnswers[0]?.value || '—';
+      const secondAns = rAnswers[1]?.value || '—';
+      const date = new Date(r.finished_at).toLocaleString('ja-JP', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+      const name = r.respondent_name || `回答者 ${i+1}`;
+      const col  = COLORS[i % COLORS.length];
+      return `<tr>
+        <td><div style="display:flex;align-items:center;gap:8px;">
+          <div class="avatar-sm" style="background:${col};">${name.charAt(0)}</div>${name}
+        </div></td>
+        <td style="font-size:11px;color:var(--text2);">${firstAns}</td>
+        <td><span class="badge badge-green" style="font-size:10px;">${secondAns}</span></td>
+        <td>—</td>
+        <td>—</td>
+        <td style="color:var(--text3);font-size:11px;">${date}</td>
+        <td><button style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--accent);" onclick="openDetail(this,${JSON.stringify(rAnswers).replace(/"/g,'&quot;')})">詳細 ↗</button></td>
+      </tr>`;
+    }).join('');
+
+  } catch(e) {
+    console.error('dashboard load error:', e);
+  }
+}
+
+function goRespondents() {
+  const id = new URLSearchParams(location.search).get('id') || SURVEY_ID_D;
+  location.href = id ? `respondents.html?id=${id}` : 'respondents.html';
+}
+
+// 初回ロード
+loadDashboard();
+
+</script>
+
+<div id="detailModal" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(26,24,37,.5);align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;width:480px;max-width:96vw;box-shadow:0 16px 48px rgba(0,0,0,.18);overflow:hidden;">
+    <div style="padding:18px 20px;border-bottom:1px solid rgba(0,0,0,.08);display:flex;align-items:center;justify-content:space-between;">
+      <div id="detailName" style="font-size:15px;font-weight:500;color:#1a1825;"></div>
+      <button onclick="document.getElementById('detailModal').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:18px;color:#6b677e;padding:2px 6px;">✕</button>
+    </div>
+    <div style="padding:18px 20px;display:flex;flex-direction:column;gap:12px;" id="detailBody"></div>
+    <div style="padding:12px 20px;border-top:1px solid rgba(0,0,0,.08);display:flex;justify-content:space-between;align-items:center;">
+      <a href="answer.html" target="_blank" style="font-size:12px;color:#5b52e8;">回答ページを開く ↗</a>
+      <button onclick="document.getElementById('detailModal').style.display='none'" style="padding:7px 14px;border-radius:8px;border:1px solid rgba(0,0,0,.08);background:#fff;font-size:13px;cursor:pointer;">閉じる</button>
+    </div>
+  </div>
+</div>
+<script>
+let detailAnswers = [];
+function openDetail(btn, answersJson) {
+  try {
+    detailAnswers = typeof answersJson === 'string'
+      ? JSON.parse(answersJson.replace(/&quot;/g, '"'))
+      : (answersJson || []);
+  } catch(e) { detailAnswers = []; }
+  const row = btn.closest('tr');
+  const name = row.querySelector('td:first-child')?.textContent?.trim() || '回答者';
+  const date = row.querySelector('td:nth-child(6)')?.textContent?.trim() || '—';
+  document.getElementById('detailName').textContent = name + ' の回答';
+  document.getElementById('detailBody').innerHTML = detailAnswers.length
+    ? detailAnswers.map((a, i) => `
+        <div style="background:#f8f7fc;border-radius:8px;padding:12px;">
+          <div style="font-size:10px;color:#aba8bb;margin-bottom:4px;">設問 ${i+1}</div>
+          <div style="font-size:13px;color:#1a1825;line-height:1.5;">${a.value || (a.values||[]).join(', ') || '（未回答）'}</div>
+        </div>`).join('')
+    : '<div style="color:#aba8bb;text-align:center;padding:16px;">回答データがありません</div>';
+  document.getElementById('detailModal').style.display = 'flex';
+}
+document.getElementById('detailModal').addEventListener('click', function(e){
+  if(e.target===this) this.style.display='none';
+});
+</script>
+
+<script>
+// サイドバーのアンケート一覧をDBから生成
+(async function() {
+  const SB_URL = 'https://sqagawuubujrcyxkmwbg.supabase.co';
+  const SB_KEY = 'sb_publishable_wmDriUhLXbcQcdd5UZMivQ_k7oe2HYC';
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/surveys?select=id,title,responses(id)&order=created_at.desc&limit=10`, {
+      headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` }
+    });
+    const surveys = await res.json();
+const container = document.getElementById('sb-survey-list');
+    if(!container || !Array.isArray(surveys)) return;
+    container.innerHTML = surveys.map(s => {
+      const count = Array.isArray(s.responses) ? s.responses.length : 0;
+      const badge = count > 0 ? `<span style="margin-left:auto;font-size:9px;background:rgba(255,255,255,.18);color:rgba(255,255,255,.8);padding:1px 6px;border-radius:8px;flex-shrink:0;">${count}</span>` : '';
+      return `<div class="sb-item" onclick="location.href='index.html?id=${s.id}'" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${s.title}">
+        <svg viewBox="0 0 16 16" fill="none" style="flex-shrink:0;width:13px;height:13px;"><path d="M3 3h10v10H3z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 6h4M6 9h2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <span style="overflow:hidden;text-overflow:ellipsis;flex:1;">${s.title}</span>
+        ${badge}
+      </div>`;
+    }).join('');
+  } catch(e) { console.error('sidebar error:', e); }
+})();
+</script>
+</body>
+</html>
