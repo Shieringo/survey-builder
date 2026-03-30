@@ -1034,11 +1034,15 @@ function buildQuestionBody(type, q) {
         <textarea class="field-input" id="coverBody_${id}" rows="8" placeholder="このアンケートの目的、所要時間、注意事項などを記入してください...">${q.coverBody||''}</textarea>
       </div>
       <div class="field-row">
+        <div class="field-label">開始ボタンのテキスト <span style="font-size:10px;color:var(--text3);font-weight:400;">（空欄でボタン非表示）</span></div>
+        <input class="field-input" id="coverBtnLabel_${id}" placeholder="アンケートを始める" value="${q.coverBtnLabel||''}" oninput="buildLivePreview()" />
+      </div>
+      <div class="field-row">
         <div class="field-label">背景スタイル</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           ${[['white','白'],['accent','アクセントカラー'],['light','ライトグレー']].map(([v,l])=>`
             <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;">
-              <input type="radio" name="coverStyle_${id}" value="${v}" ${v==='white'?'checked':''} style="accent-color:var(--accent);" />${l}
+              <input type="radio" name="coverStyle_${id}" value="${v}" ${(q.coverStyle||'white')===v?'checked':''} style="accent-color:var(--accent);" />${l}
             </label>`).join('')}
         </div>
       </div>
@@ -1860,11 +1864,14 @@ function buildLivePreview() {
     if(type === 'cover') {
       const titleInput = card.querySelector('.field-input[oninput*="syncTitle"]');
       const bodyTA     = card.querySelector(`#coverBody_${id}`);
+      const btnLabelEl = card.querySelector(`[id^="coverBtnLabel_"]`);
       const coverTitle = titleInput ? titleInput.value : '';
       const coverBody  = bodyTA ? bodyTA.value : '';
+      const btnLabel   = btnLabelEl ? btnLabelEl.value.trim() : '';
       html += `<div class="prev-q-item" style="padding:14px;background:linear-gradient(135deg,#ede9ff,#f4f3f8);border-radius:8px;border:1px solid var(--accent-light);">
         ${coverTitle ? `<div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px;">${coverTitle}</div>` : ''}
-        ${coverBody  ? `<div style="font-size:11px;color:var(--text2);line-height:1.8;white-space:pre-wrap;">${coverBody}</div>` : ''}
+        ${coverBody  ? `<div style="font-size:11px;color:var(--text2);line-height:1.8;white-space:pre-wrap;margin-bottom:${btnLabel?'12px':'0'};">${coverBody}</div>` : ''}
+        ${btnLabel   ? `<div style="display:inline-flex;align-items:center;gap:5px;padding:7px 14px;background:var(--accent);color:#fff;border-radius:7px;font-size:11px;font-weight:500;">${btnLabel} →</div>` : ''}
       </div>`;
       return;
     }
@@ -2246,8 +2253,9 @@ async function loadSurveyFromDB(id) {
         scaleMax: q.settings?.max || 5,
         scaleMinLabel: q.settings?.minLabel || '',
         scaleMaxLabel: q.settings?.maxLabel || '',
-        coverBody:  q.settings?.coverBody  || '',
-        coverStyle: q.settings?.coverStyle || 'white',
+        coverBody:     q.settings?.coverBody     || '',
+        coverStyle:    q.settings?.coverStyle    || 'white',
+        coverBtnLabel: q.settings?.coverBtnLabel || '',
         dbId: q.id, // 元のDB上のIDを保持
       };
 
@@ -2325,9 +2333,11 @@ async function saveSurveyToDB() {
       } else if(type === 'cover') {
         const bodyTA    = card.querySelector(`[id^="coverBody_"]`);
         const styleEl   = card.querySelector(`[name^="coverStyle_"]:checked`);
+        const btnLblEl  = card.querySelector(`[id^="coverBtnLabel_"]`);
         settings = {
-          coverBody:  bodyTA  ? bodyTA.value  : '',
-          coverStyle: styleEl ? styleEl.value : 'white',
+          coverBody:     bodyTA  ? bodyTA.value  : '',
+          coverStyle:    styleEl ? styleEl.value : 'white',
+          coverBtnLabel: btnLblEl ? btnLblEl.value : '',
         };
       } else if(type === 'matrix' || type === 'matrix_multi') {
         settings = {

@@ -421,16 +421,31 @@ async function loadSurveyInfo() {
       } else if(q.type === 'description') {
         return `<div class="desc-block"><p>${(q.settings&&q.settings.text)||q.title}</p></div>`;
       } else if(q.type === 'cover') {
-        const coverBody = q.settings?.coverBody || '';
+        const coverBody  = q.settings?.coverBody     || '';
+        const btnLabel   = q.settings?.coverBtnLabel || '';
         const style = q.settings?.coverStyle || 'white';
         const bg = style === 'accent' ? 'linear-gradient(135deg,#5b52e8,#7c75ef)'
                  : style === 'light'  ? '#f4f3f8'
                  : '#ffffff';
-        const color = style === 'accent' ? '#fff' : 'var(--text)';
+        const color    = style === 'accent' ? '#fff'                  : 'var(--text)';
         const subColor = style === 'accent' ? 'rgba(255,255,255,.85)' : 'var(--text2)';
-        return `<div style="background:${bg};border-radius:12px;padding:28px 24px;margin-bottom:16px;border:1px solid rgba(0,0,0,.06);">
-          ${q.title ? `<div style="font-size:20px;font-weight:700;color:${color};margin-bottom:14px;line-height:1.4;">${q.title}</div>` : ''}
+        const btnBg    = style === 'accent' ? 'rgba(255,255,255,.18)' : 'var(--accent)';
+        const btnBorder= style === 'accent' ? '1.5px solid rgba(255,255,255,.45)' : 'none';
+        const btnHtml  = btnLabel
+          ? `<div style="margin-top:20px;">
+               <button class="cover-start-btn"
+                 onclick="var w=this.closest('[data-cover]');w.nextElementSibling?.scrollIntoView({behavior:'smooth'});w.style.display='none';"
+                 style="display:inline-flex;align-items:center;gap:8px;padding:11px 22px;background:${btnBg};color:#fff;border:${btnBorder};border-radius:9px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:opacity .15s;"
+                 onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+                 ${btnLabel}
+                 <svg viewBox="0 0 16 16" fill="none" style="width:14px;height:14px;"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+               </button>
+             </div>`
+          : '';
+        return `<div data-cover="1" style="background:${bg};border-radius:12px;padding:28px 24px;margin-bottom:16px;border:1px solid rgba(0,0,0,.06);">
+          ${q.title   ? `<div style="font-size:20px;font-weight:700;color:${color};margin-bottom:${coverBody?'14px':'0'};line-height:1.4;">${q.title}</div>` : ''}
           ${coverBody ? `<div style="font-size:14px;color:${subColor};line-height:1.9;white-space:pre-wrap;">${coverBody}</div>` : ''}
+          ${btnHtml}
         </div>`;
       }
 
