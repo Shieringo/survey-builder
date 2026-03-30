@@ -1798,6 +1798,20 @@ function buildFullPreview() {
     }
 
     if(type === 'branch') return;
+    if(type === 'cover') {
+      const titleInput = card.querySelector('.field-input[oninput*="syncTitle"]');
+      const bodyTA     = card.querySelector(`[id^="coverBody_"]`);
+      const btnLblEl  = card.querySelector(`[id^="coverBtnLabel_"]`);
+      const coverTitle = titleInput ? titleInput.value : '';
+      const coverBody  = bodyTA ? bodyTA.value : '';
+      const btnLabel   = btnLblEl ? btnLblEl.value.trim() : '';
+      html += `<div style="padding:20px 24px;background:linear-gradient(135deg,#ede9ff,#f4f3f8);border-radius:10px;border:1px solid var(--accent-light);margin-bottom:4px;">
+        ${coverTitle ? `<div style="font-size:18px;font-weight:600;color:var(--text);margin-bottom:10px;">${coverTitle}</div>` : ''}
+        ${coverBody  ? `<div style="font-size:14px;color:var(--text2);line-height:1.8;white-space:pre-wrap;margin-bottom:${btnLabel?'16px':'0'};">${coverBody}</div>` : ''}
+        ${btnLabel   ? `<div style="display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:var(--accent);color:#fff;border-radius:8px;font-size:14px;font-weight:500;">${btnLabel} →</div>` : ''}
+      </div>`;
+      return;
+    }
     if(type === 'page_break') {
       html += `<div style="display:flex;align-items:center;gap:8px;margin:4px 0;">
         <div style="flex:1;height:2px;background:repeating-linear-gradient(90deg,var(--accent) 0,var(--accent) 8px,transparent 8px,transparent 16px);opacity:.4;border-radius:1px;"></div>
@@ -1808,11 +1822,13 @@ function buildFullPreview() {
     }
 
     qNum++;
+    const titleEl2 = card.querySelector('.field-input[oninput*="syncTitle"]') || card.querySelector('.field-input');
+    const qTitle = titleEl2 ? titleEl2.value : '';
     const requiredStar = card.querySelector('.q-required-star');
     const isReq = requiredStar && requiredStar.style.opacity !== '0';
 
     html += `<div style="border-bottom:1px solid var(--border2);padding-bottom:18px;">`;
-    html += `<div style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:10px;">${qNum}. ${qTitle}${isReq ? ' <span style="color:var(--danger);">*</span>' : ''}</div>`;
+    html += `<div style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:10px;"><span style="font-weight:700;color:var(--accent);margin-right:6px;">Q${qNum}</span>${qTitle}${isReq ? ' <span style="color:var(--danger);">*</span>' : ''}</div>`;
 
     if(type === 'text') {
       html += `<input style="width:100%;padding:10px 13px;border-radius:8px;border:1px solid var(--border2);font-size:14px;font-family:var(--font);outline:none;background:var(--surface2);" placeholder="回答を入力..." />`;
@@ -1970,6 +1986,8 @@ function buildLivePreview() {
   const cards = document.querySelectorAll('.q-card');
   const body = document.getElementById('previewBody');
   let html = '';
+  let qNum = 0;
+  const NO_Q_TYPES = new Set(['cover','page_break','image','video','url','description','branch']);
 
   cards.forEach(card => {
     const type = card.dataset.type;
@@ -1979,6 +1997,8 @@ function buildLivePreview() {
     const requiredStar = card.querySelector('.q-required-star');
     const isRequired = requiredStar && requiredStar.style.opacity !== '0' && requiredStar.textContent === '★';
     const reqMark = isRequired ? '<span style="color:#e24b4a;">*</span>' : '';
+    if(!NO_Q_TYPES.has(type)) qNum++;
+    const qLabel = NO_Q_TYPES.has(type) ? '' : `<span style="font-size:10px;font-weight:700;color:var(--accent);margin-right:3px;">Q${qNum}</span>`;
 
     if(type === 'image') {
       const img = card.querySelector('.uploaded-img');
@@ -2029,6 +2049,20 @@ function buildLivePreview() {
       return;
     }
     if(type === 'branch') return;
+    if(type === 'cover') {
+      const titleInput = card.querySelector('.field-input[oninput*="syncTitle"]');
+      const bodyTA     = card.querySelector(`[id^="coverBody_"]`);
+      const btnLblEl  = card.querySelector(`[id^="coverBtnLabel_"]`);
+      const coverTitle = titleInput ? titleInput.value : '';
+      const coverBody  = bodyTA ? bodyTA.value : '';
+      const btnLabel   = btnLblEl ? btnLblEl.value.trim() : '';
+      html += `<div style="padding:20px 24px;background:linear-gradient(135deg,#ede9ff,#f4f3f8);border-radius:10px;border:1px solid var(--accent-light);margin-bottom:4px;">
+        ${coverTitle ? `<div style="font-size:18px;font-weight:600;color:var(--text);margin-bottom:10px;">${coverTitle}</div>` : ''}
+        ${coverBody  ? `<div style="font-size:14px;color:var(--text2);line-height:1.8;white-space:pre-wrap;margin-bottom:${btnLabel?'16px':'0'};">${coverBody}</div>` : ''}
+        ${btnLabel   ? `<div style="display:inline-flex;align-items:center;gap:6px;padding:10px 20px;background:var(--accent);color:#fff;border-radius:8px;font-size:14px;font-weight:500;">${btnLabel} →</div>` : ''}
+      </div>`;
+      return;
+    }
     if(type === 'page_break') {
       html += `<div class="prev-q-item" style="padding:4px 0;">
         <div style="display:flex;align-items:center;gap:6px;">
@@ -2040,6 +2074,8 @@ function buildLivePreview() {
       return;
     }
     if(!qTitle) return;
+
+    html += `<div class="prev-q-item"><div class="pq-label">${qLabel}${qTitle}${reqMark}</div>`;
 
     if(type === 'text') {
       html += `<div class="prev-fake-input" style="color:var(--text3);font-size:11px;">テキストを入力...</div>`;
