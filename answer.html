@@ -133,6 +133,30 @@ textarea.field { resize:vertical; min-height:100px; }
 
 /* submit */
 .submit-area { margin-top:28px; text-align:center; }
+
+/* page navigation */
+.page-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 28px; gap: 12px; flex-wrap: wrap;
+}
+.btn-nav {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 12px 22px; border-radius: 10px; font-size: 14px; font-weight: 500;
+  border: 1.5px solid var(--border); background: var(--surface); color: var(--text);
+  cursor: pointer; font-family: var(--font); transition: all .15s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.btn-nav:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+.btn-next { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 4px 14px rgba(91,82,232,.25); }
+.btn-next:hover { background: #4a42d4; border-color: #4a42d4; box-shadow: 0 6px 20px rgba(91,82,232,.3); }
+.page-dots { display: flex; gap: 6px; align-items: center; flex: 1; justify-content: center; }
+.page-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--border); border: none; cursor: pointer;
+  transition: all .2s; padding: 0;
+}
+.page-dot.active { background: var(--accent); width: 22px; border-radius: 4px; }
+.page-dot.done { background: var(--accent); opacity: .45; }
 .btn-submit {
   display:inline-block; padding:15px 48px; border-radius:10px;
   background:var(--btn); color:#fff; font-size:16px; font-weight:500;
@@ -168,8 +192,19 @@ textarea.field { resize:vertical; min-height:100px; }
 <div class="survey-body" id="surveyBody" style="display:none;">
   <p class="required-note">* は必須回答です</p>
   <div id="dynamicQuestions"></div>
-  <div class="submit-area">
-    <button class="btn-submit" id="submitBtn" onclick="submitSurvey()">送信する</button>
+
+  <!-- ページナビゲーション -->
+  <div class="page-nav" id="pageNav">
+    <button class="btn-nav btn-prev" id="prevBtn" onclick="goPrev()" style="display:none;">
+      <svg viewBox="0 0 16 16" fill="none" style="width:14px;height:14px;"><path d="M10 4L6 8l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      前へ
+    </button>
+    <div class="page-dots" id="pageDots"></div>
+    <button class="btn-nav btn-next" id="nextBtn" onclick="goNext()">
+      次へ
+      <svg viewBox="0 0 16 16" fill="none" style="width:14px;height:14px;"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="btn-submit" id="submitBtn" onclick="submitSurvey()" style="display:none;">送信する</button>
   </div>
 </div>
 
@@ -186,137 +221,9 @@ textarea.field { resize:vertical; min-height:100px; }
 </div>
 
 <script>
-// 選択UI
-function selectChoice(el, name, total) {
-  document.querySelectorAll(`#${name} .choice-item`).forEach(i => i.classList.remove('selected'));
-  el.classList.add('selected');
-  el.querySelector('input').checked = true;
-  updateProgress(total);
-}
-function toggleCheck(el, total) {
-  el.classList.toggle('selected');
-  el.querySelector('input').checked = el.classList.contains('selected');
-  if(total) updateProgress(total);
-}
-function selectScale(el, groupId, val, total) {
-  document.querySelectorAll(`#${groupId} .scale-btn`).forEach(b => b.classList.remove('selected'));
-  el.classList.add('selected');
-  el.dataset.val = val;
-  if(total) updateProgress(total);
-}
-
-// プログレス（DB設問対応）
-function updateProgress(total) {
-  const blocks = document.querySelectorAll('.q-block');
-  if(!total) total = blocks.length;
-  let answered = 0;
-  blocks.forEach(b => {
-    const qid = b.dataset.qid;
-    const input  = b.querySelector('input[type=text],input[type=number]');
-    const area   = b.querySelector('textarea');
-    const sel    = b.querySelector('select');
-    const radio  = b.querySelector('input[type=radio]:checked');
-    const check  = b.querySelector('input[type=checkbox]:checked');
-    const scale  = b.querySelector('.scale-btn.selected');
-    if(input?.value || area?.value || sel?.value || radio || check || scale) answered++;
-  });
-  answered = Math.min(answered, total);
-  document.getElementById('progressFill').style.width = (answered/total*100)+'%';
-  document.getElementById('progressLabel').textContent = `${answered} / ${total} 問`;
-}
-
-// バリデーション（required設問をチェック）
-function validate() {
-  let ok = true;
-  document.querySelectorAll('.q-block[data-required="true"]').forEach(b => {
-    const qid   = b.dataset.qid;
-    const errEl = document.getElementById(`err_${qid}`);
-    const input = b.querySelector('input[type=text],textarea,select');
-    const radio = b.querySelector('input[type=radio]:checked');
-    const scale = b.querySelector('.scale-btn.selected');
-    const answered = (input?.value) || radio || scale;
-    if(!answered) {
-      if(errEl) errEl.style.display = 'block';
-      ok = false;
-    } else {
-      if(errEl) errEl.style.display = 'none';
-    }
-  });
-  return ok;
-}
-
-async function submitSurvey() {
-  if(!validate()) {
-    document.querySelector('[id^="err_"][style*="block"]')
-      ?.closest('.q-block')?.scrollIntoView({behavior:'smooth',block:'center'});
-    return;
-  }
-  const btn = document.getElementById('submitBtn');
-  btn.disabled = true;
-  btn.textContent = '送信中...';
-
-  try {
-    if(SURVEY_ID) {
-      // 回答セッション作成
-      const [response] = await sbPost('responses', {
-        survey_id: SURVEY_ID,
-        completed: true,
-        finished_at: new Date().toISOString()
-      });
-
-      // 各設問の回答を収集
-      const answers = [];
-      const surveyQuestions = window._surveyQuestions || [];
-      document.querySelectorAll('.q-block').forEach((b, idx) => {
-        const qid      = b.dataset.qid;
-        const dbQId    = surveyQuestions[idx]?.id || null; // 実際のDB question_id
-        const radio    = b.querySelector('input[type=radio]:checked');
-        const checks   = [...b.querySelectorAll('input[type=checkbox]:checked')];
-        const scale    = b.querySelector('.scale-btn.selected');
-        const select   = b.querySelector('select');
-        const text     = b.querySelector('input[type=text],textarea');
-        const ranks    = [...b.querySelectorAll('.rank-label')].map(l=>l.textContent);
-
-        let value = '', values = [];
-        if(radio)              value = radio.value;
-        else if(checks.length) { values = checks.map(c=>c.value); value = values.join(','); }
-        else if(scale)         value = scale.dataset.val || '';
-        else if(select?.value) value = select.value;
-        else if(text?.value)   value = text.value;
-        else if(ranks.length)  { values = ranks; value = ranks.join(','); }
-
-        if(value || values.length) {
-          answers.push({ response_id: response.id, question_id: dbQId, value, values });
-        }
-      });
-
-      if(answers.length) {
-        console.log('answers送信:', answers.length, '件', answers);
-        const res = await sbPost('answers', answers);
-        console.log('answers結果:', res);
-      } else {
-        console.log('answers: 送信対象なし');
-      }
-    }
-
-    // 完了画面表示
-    document.getElementById('surveyBody').style.display = 'none';
-    document.getElementById('completeScreen').style.display = 'block';
-    document.querySelector('.survey-header').style.display = 'none';
-    document.getElementById('progressFill').style.width = '100%';
-
-  } catch(e) {
-    console.error('submit error:', e.message, e);
-    // エラー内容をトースト表示
-    const errDiv = document.createElement('div');
-    errDiv.textContent = '送信エラー: ' + e.message;
-    errDiv.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#e24b4a;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;';
-    document.body.appendChild(errDiv);
-    setTimeout(()=>errDiv.remove(), 4000);
-    btn.disabled = false;
-    btn.textContent = '送信する';
-  }
-}
+// ============================================================
+// ページ分割ナビゲーション + 条件分岐スキップ
+// ============================================================
 
 // Supabase設定
 const SB_URL = 'https://sqagawuubujrcyxkmwbg.supabase.co';
@@ -331,25 +238,285 @@ async function sbPost(path, body) {
   return res.json();
 }
 
-// URLからsurveyIdを取得
 const SURVEY_ID = new URLSearchParams(location.search).get('survey') || null;
 
-// DBからアンケート情報と設問を取得してレンダリング
+// ── ページ・分岐の状態管理 ──
+// pages[i] = [ questionIndex, ... ]  （page_break設問を除いた論理ページ）
+// branchRules = [ { sourceQIdx, condition, value, targetPageIdx | 'end' }, ... ]
+let pages = [[]];
+let branchRules = [];
+let currentPage = 0;
+let totalQ = 0;  // page_break / branch / cover / description / image / url / video を除いた回答設問数
+
+// 現在のページで表示すべきページインデックスの配列（スキップ済を考慮した訪問順）
+let pageHistory = [0];
+
+// ── 選択UI ──
+function selectChoice(el, groupId) {
+  document.querySelectorAll(`#${groupId} .choice-item`).forEach(i => i.classList.remove('selected'));
+  el.classList.add('selected');
+  el.querySelector('input').checked = true;
+  updateProgress();
+}
+function toggleCheck(el) {
+  el.classList.toggle('selected');
+  el.querySelector('input').checked = el.classList.contains('selected');
+  updateProgress();
+}
+function selectScale(el, groupId, val) {
+  document.querySelectorAll(`#${groupId} .scale-btn`).forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  el.dataset.val = val;
+  updateProgress();
+}
+
+// ── プログレスバー（表示中ページ内の回答率） ──
+function updateProgress() {
+  const visibleBlocks = getVisibleBlocks();
+  const answered = visibleBlocks.filter(b => isAnswered(b)).length;
+  const total = visibleBlocks.filter(b => b.dataset.required === 'true').length || visibleBlocks.length || 1;
+  // 全体進捗：訪問済みページ / 全ページ数
+  const globalPct = pages.length <= 1
+    ? (answered / Math.max(totalQ, 1) * 100)
+    : ((currentPage) / pages.length * 100 + (answered / Math.max(visibleBlocks.length,1)) / pages.length * 100);
+  document.getElementById('progressFill').style.width = Math.min(globalPct, 95) + '%';
+  const pageQs = visibleBlocks.length;
+  const answeredAll = countAllAnswered();
+  document.getElementById('progressLabel').textContent = `${answeredAll} / ${totalQ} 問`;
+}
+
+function countAllAnswered() {
+  return [...document.querySelectorAll('.q-block')].filter(b => !b.classList.contains('page-hidden') && isAnswered(b)).length;
+}
+
+function isAnswered(b) {
+  const input = b.querySelector('input[type=text],input[type=number]');
+  const area  = b.querySelector('textarea');
+  const sel   = b.querySelector('select');
+  const radio = b.querySelector('input[type=radio]:checked');
+  const check = b.querySelector('input[type=checkbox]:checked');
+  const scale = b.querySelector('.scale-btn.selected');
+  return !!(input?.value || area?.value || sel?.value || radio || check || scale);
+}
+
+function getVisibleBlocks() {
+  return [...document.querySelectorAll('.q-block')].filter(b => !b.classList.contains('page-hidden'));
+}
+
+// ── バリデーション（現在ページのみ） ──
+function validateCurrentPage() {
+  let ok = true;
+  getVisibleBlocks().forEach(b => {
+    if(b.dataset.required !== 'true') return;
+    const errEl = document.getElementById(`err_${b.dataset.qid}`);
+    if(!isAnswered(b)) {
+      if(errEl) errEl.style.display = 'block';
+      ok = false;
+    } else {
+      if(errEl) errEl.style.display = 'none';
+    }
+  });
+  if(!ok) {
+    const first = document.querySelector('.error-msg[style*="block"]');
+    first?.closest('.q-block')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  return ok;
+}
+
+// ── 条件分岐：現在の回答から次のページを決定 ──
+function resolveNextPage() {
+  // currentPage のブロックから回答を取得
+  const pageQIndices = pages[currentPage] || [];
+  for(const rule of branchRules) {
+    if(rule.sourcePage !== currentPage) continue;
+    // 対象設問の回答値を取得
+    const qid = `dq_${rule.sourceQIdx}`;
+    const block = document.querySelector(`.q-block[data-qid="${qid}"]`);
+    if(!block) continue;
+    const radio = block.querySelector('input[type=radio]:checked');
+    const sel   = block.querySelector('select');
+    const curVal = radio?.value || sel?.value || '';
+    if(!curVal) continue;
+    // 条件マッチチェック
+    if(rule.value === curVal || rule.value === '*') {
+      if(rule.target === 'end') return 'end';
+      if(typeof rule.target === 'number') return rule.target;
+    }
+  }
+  return currentPage + 1;
+}
+
+// ── ページ表示切替 ──
+function showPage(pageIdx) {
+  currentPage = pageIdx;
+  // 全ブロックを一旦隠す
+  document.querySelectorAll('.q-block, .desc-block, [data-cover]').forEach(el => {
+    el.classList.add('page-hidden');
+    el.style.display = 'none';
+  });
+  // 今のページのブロックを表示
+  const indices = pages[pageIdx] || [];
+  indices.forEach(qi => {
+    const el = document.querySelector(`[data-page-qi="${qi}"]`);
+    if(el) { el.classList.remove('page-hidden'); el.style.display = ''; }
+  });
+  // ボタン制御
+  const prevBtn  = document.getElementById('prevBtn');
+  const nextBtn  = document.getElementById('nextBtn');
+  const submitBtn= document.getElementById('submitBtn');
+  const isFirst  = pageHistory.length <= 1;
+  const isLast   = pageIdx >= pages.length - 1;
+  prevBtn.style.display  = isFirst ? 'none' : '';
+  nextBtn.style.display  = isLast  ? 'none' : '';
+  submitBtn.style.display = isLast ? '' : 'none';
+  // ドット更新
+  renderDots();
+  updateProgress();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderDots() {
+  const dotsEl = document.getElementById('pageDots');
+  if(pages.length <= 1) { dotsEl.innerHTML = ''; return; }
+  dotsEl.innerHTML = pages.map((_, i) => {
+    const cls = i === currentPage ? 'active' : (pageHistory.includes(i) ? 'done' : '');
+    return `<button class="page-dot ${cls}" onclick="jumpToPage(${i})" title="${i+1}ページ"></button>`;
+  }).join('');
+}
+
+function jumpToPage(idx) {
+  // 訪問済みページのみジャンプ可
+  if(!pageHistory.includes(idx) && idx !== currentPage) return;
+  currentPage = idx;
+  // historyを切り詰め
+  const pos = pageHistory.indexOf(idx);
+  if(pos >= 0) pageHistory = pageHistory.slice(0, pos + 1);
+  showPage(idx);
+}
+
+// ── 次へ ──
+function goNext() {
+  if(!validateCurrentPage()) return;
+  const next = resolveNextPage();
+  if(next === 'end') {
+    // 強制終了（分岐）
+    submitSurvey();
+    return;
+  }
+  if(next >= pages.length) {
+    submitSurvey();
+    return;
+  }
+  if(!pageHistory.includes(next)) pageHistory.push(next);
+  else pageHistory = [...pageHistory, next];
+  showPage(next);
+}
+
+// ── 前へ ──
+function goPrev() {
+  if(pageHistory.length <= 1) return;
+  pageHistory.pop();
+  const prev = pageHistory[pageHistory.length - 1];
+  showPage(prev);
+}
+
+// ── 送信 ──
+async function submitSurvey() {
+  // 全ページのバリデーション
+  let allOk = true;
+  for(const pi of pageHistory) {
+    const indices = pages[pi] || [];
+    indices.forEach(qi => {
+      const el = document.querySelector(`.q-block[data-page-qi="${qi}"]`);
+      if(!el || el.dataset.required !== 'true') return;
+      const errEl = document.getElementById(`err_${el.dataset.qid}`);
+      if(!isAnswered(el)) {
+        if(errEl) errEl.style.display = 'block';
+        allOk = false;
+      }
+    });
+  }
+  if(!allOk) {
+    // 最初のエラーページへ
+    for(const pi of pageHistory) {
+      const indices = pages[pi] || [];
+      let found = false;
+      for(const qi of indices) {
+        const el = document.querySelector(`.q-block[data-page-qi="${qi}"]`);
+        if(el && el.dataset.required === 'true' && !isAnswered(el)) {
+          showPage(pi);
+          setTimeout(() => el.scrollIntoView({ behavior:'smooth', block:'center' }), 100);
+          found = true; break;
+        }
+      }
+      if(found) break;
+    }
+    return;
+  }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '送信中...';
+
+  try {
+    if(SURVEY_ID) {
+      const [response] = await sbPost('responses', {
+        survey_id: SURVEY_ID, completed: true, finished_at: new Date().toISOString()
+      });
+
+      const answers = [];
+      const surveyQuestions = window._surveyQuestions || [];
+      document.querySelectorAll('.q-block').forEach((b) => {
+        const qi = parseInt(b.dataset.pageQi);
+        const dbQ = surveyQuestions[qi];
+        if(!dbQ) return;
+        const radio  = b.querySelector('input[type=radio]:checked');
+        const checks = [...b.querySelectorAll('input[type=checkbox]:checked')];
+        const scale  = b.querySelector('.scale-btn.selected');
+        const select = b.querySelector('select');
+        const text   = b.querySelector('input[type=text],textarea');
+        const ranks  = [...b.querySelectorAll('.rank-label')].map(l=>l.textContent);
+        let value = '', values = [];
+        if(radio)              value = radio.value;
+        else if(checks.length) { values = checks.map(c=>c.value); value = values.join(','); }
+        else if(scale)         value = scale.dataset.val || '';
+        else if(select?.value) value = select.value;
+        else if(text?.value)   value = text.value;
+        else if(ranks.length)  { values = ranks; value = ranks.join(','); }
+        if(value || values.length) answers.push({ response_id: response.id, question_id: dbQ.id, value, values });
+      });
+
+      if(answers.length) await sbPost('answers', answers);
+    }
+
+    document.getElementById('progressFill').style.width = '100%';
+    document.getElementById('progressLabel').textContent = `完了`;
+    document.getElementById('surveyBody').style.display = 'none';
+    document.getElementById('completeScreen').style.display = 'block';
+    document.querySelector('.survey-header').style.display = 'none';
+  } catch(e) {
+    console.error('submit error:', e);
+    const errDiv = document.createElement('div');
+    errDiv.textContent = '送信エラー: ' + e.message;
+    errDiv.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#e24b4a;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;';
+    document.body.appendChild(errDiv);
+    setTimeout(()=>errDiv.remove(), 4000);
+    btn.disabled = false; btn.textContent = '送信する';
+  }
+}
+
+// ── DBからアンケートを読み込んでレンダリング ──
 async function loadSurveyInfo() {
   if(!SURVEY_ID) {
-    // IDなし = サンプル表示
     document.getElementById('surveyBody').style.display = 'block';
-    updateProgress();
+    showPage(0);
     return;
   }
   try {
-    const SB_URL2 = 'https://sqagawuubujrcyxkmwbg.supabase.co';
-    const SB_KEY2 = 'sb_publishable_wmDriUhLXbcQcdd5UZMivQ_k7oe2HYC';
-    const get = path => fetch(`${SB_URL2}/rest/v1/${path}`, {
-      headers: { apikey: SB_KEY2, Authorization: `Bearer ${SB_KEY2}` }
+    const get = path => fetch(`${SB_URL}/rest/v1/${path}`, {
+      headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` }
     }).then(r => r.json());
 
-    // アンケート情報
     const [survey] = await get(`surveys?id=eq.${SURVEY_ID}&select=*`);
     if(!survey) {
       document.querySelector('.survey-header h1').textContent = 'アンケートが見つかりません';
@@ -359,42 +526,131 @@ async function loadSurveyInfo() {
     document.querySelector('.survey-header p').textContent  = survey.description || '';
     if(survey.header_color) document.querySelector('.survey-header').style.background = survey.header_color;
     const submitBtn = document.getElementById('submitBtn');
-    if(submitBtn && survey.btn_color) submitBtn.style.background = survey.btn_color;
+    if(submitBtn && survey.btn_color) {
+      submitBtn.style.background = survey.btn_color;
+      document.querySelectorAll('.btn-next').forEach(b => b.style.background = survey.btn_color);
+    }
     document.title = `${survey.title} — Survey Builder`;
 
-    // 設問・選択肢を取得（グローバルに保持してsubmit時に使用）
     window._surveyQuestions = await get(`questions?survey_id=eq.${SURVEY_ID}&select=*,options(*)&order=position`);
     const questions = window._surveyQuestions;
     const container = document.getElementById('dynamicQuestions');
-    const total = questions.length;
 
-    document.getElementById('progressLabel').textContent = `0 / ${total} 問`;
+    // ── ページ・分岐の構築 ──
+    pages = [[]];
+    branchRules = [];
+    let pageIdx = 0;
+    let qAnswerIdx = 0; // 回答設問の通し番号（page_break/desc/cover 除く）
 
-    container.innerHTML = questions.map((q, qi) => {
+    const NON_ANSWER_TYPES = new Set(['description','cover','image','url','video','page_break','branch']);
+
+    const htmlParts = questions.map((q, qi) => {
       const choices = (q.options||[]).filter(o=>o.option_type==='choice').sort((a,b)=>a.position-b.position);
       const qid = `dq_${qi}`;
       const req = q.required ? '<span class="q-required">*</span>' : '';
+
+      // ── page_break ──
+      if(q.type === 'page_break') {
+        pageIdx++;
+        pages.push([]);
+        return `<!-- page_break qi=${qi} -->`;
+      }
+
+      // ── branch ──
+      if(q.type === 'branch') {
+        const rules = q.settings?.rules || [];
+        rules.forEach(r => {
+          // r = { sourceQIdx (position in questions), value, target (pageIdx or 'end') }
+          branchRules.push({
+            sourcePage: pageIdx,
+            sourceQIdx: r.sourceQIdx,
+            value: r.value,
+            target: r.target
+          });
+        });
+        return `<!-- branch qi=${qi} -->`;
+      }
+
+      // ── description ──
+      if(q.type === 'description') {
+        const text = (q.settings&&q.settings.text)||q.title||'';
+        pages[pageIdx].push(qi);
+        return `<div class="desc-block" data-page-qi="${qi}" style="display:none;"><p>${text}</p></div>`;
+      }
+
+      // ── cover ──
+      if(q.type === 'cover') {
+        const coverBody  = q.settings?.coverBody     || '';
+        const btnLabel   = q.settings?.coverBtnLabel || '';
+        const style = q.settings?.coverStyle || 'white';
+        const bg = style==='accent' ? 'linear-gradient(135deg,#5b52e8,#7c75ef)'
+                 : style==='light'  ? '#f4f3f8' : '#ffffff';
+        const color    = style==='accent' ? '#fff'                  : 'var(--text)';
+        const subColor = style==='accent' ? 'rgba(255,255,255,.85)' : 'var(--text2)';
+        pages[pageIdx].push(qi);
+        return `<div data-cover="1" data-page-qi="${qi}" style="display:none;background:${bg};border-radius:12px;padding:28px 24px;margin-bottom:16px;border:1px solid rgba(0,0,0,.06);">
+          ${q.title   ? `<div style="font-size:20px;font-weight:700;color:${color};margin-bottom:${coverBody?'14px':'0'};line-height:1.4;">${q.title}</div>` : ''}
+          ${coverBody ? `<div style="font-size:14px;color:${subColor};line-height:1.9;white-space:pre-wrap;">${coverBody}</div>` : ''}
+          ${btnLabel  ? `<div style="margin-top:20px;"><button onclick="goNext()" style="display:inline-flex;align-items:center;gap:8px;padding:11px 22px;background:var(--accent);color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;">${btnLabel} →</button></div>` : ''}
+        </div>`;
+      }
+
+      // ── image ──
+      if(q.type === 'image') {
+        const imgUrl = q.settings?.imageUrl || '';
+        const desc   = q.settings?.desc     || '';
+        pages[pageIdx].push(qi);
+        return `<div class="q-block" data-page-qi="${qi}" data-required="false" data-qid="${qid}" style="display:none;">
+          ${imgUrl ? `<img src="${imgUrl}" style="width:100%;border-radius:8px;margin-bottom:10px;" />` : ''}
+          ${desc   ? `<p style="font-size:14px;color:var(--text2);line-height:1.6;">${desc}</p>` : ''}
+        </div>`;
+      }
+
+      // ── url ──
+      if(q.type === 'url') {
+        const href = q.settings?.url || q.url || '#';
+        const label = q.settings?.linkText || href;
+        pages[pageIdx].push(qi);
+        return `<div class="q-block" data-page-qi="${qi}" data-required="false" data-qid="${qid}" style="display:none;">
+          <a href="${href}" target="_blank" style="color:var(--accent);text-decoration:underline;font-size:14px;">🔗 ${label}</a>
+        </div>`;
+      }
+
+      // ── video ──
+      if(q.type === 'video') {
+        const url = q.settings?.url || '';
+        const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
+        const inner = ytMatch
+          ? `<div style="position:relative;padding-bottom:56.25%;border-radius:8px;overflow:hidden;background:#000;"><iframe src="https://www.youtube.com/embed/${ytMatch[1]}" style="position:absolute;inset:0;width:100%;height:100%;border:none;" allowfullscreen></iframe></div>`
+          : (url ? `<p style="font-size:14px;color:var(--text2);">🎬 ${url}</p>` : '');
+        pages[pageIdx].push(qi);
+        return `<div class="q-block" data-page-qi="${qi}" data-required="false" data-qid="${qid}" style="display:none;">${inner}</div>`;
+      }
+
+      // ── 回答設問 ──
+      pages[pageIdx].push(qi);
+      totalQ++;
       let inner = '';
 
       if(q.type === 'text') {
-        inner = `<input class="field" id="${qid}" placeholder="回答を入力..." oninput="updateProgress(${total})" />`;
+        inner = `<input class="field" id="${qid}" placeholder="回答を入力..." oninput="updateProgress()" />`;
       } else if(q.type === 'textarea') {
-        inner = `<textarea class="field" id="${qid}" placeholder="回答を入力..." oninput="updateProgress(${total})"></textarea>`;
+        inner = `<textarea class="field" id="${qid}" placeholder="回答を入力..." oninput="updateProgress()"></textarea>`;
       } else if(q.type === 'select') {
-        inner = `<select class="field" id="${qid}" onchange="updateProgress(${total})">
+        inner = `<select class="field" id="${qid}" onchange="updateProgress()">
           <option value="">選択してください...</option>
-          ${choices.map(o=>`<option value="${o.label}">${o.label}</option>`).join('')}
+          ${choices.map(o=>`<option value="${escHtml(o.label)}">${escHtml(o.label)}</option>`).join('')}
         </select>`;
       } else if(q.type === 'radio') {
         inner = `<div class="choice-list" id="${qid}">
-          ${choices.map(o=>`<label class="choice-item" onclick="selectChoice(this,'${qid}',${total})">
-            <input type="radio" name="${qid}" value="${o.label}" /><span>${o.label}</span>
+          ${choices.map(o=>`<label class="choice-item" onclick="selectChoice(this,'${qid}')">
+            <input type="radio" name="${qid}" value="${escHtml(o.label)}" /><span>${escHtml(o.label)}</span>
           </label>`).join('')}
         </div>`;
       } else if(q.type === 'checkbox') {
         inner = `<div class="choice-list" id="${qid}">
-          ${choices.map(o=>`<label class="choice-item" onclick="toggleCheck(this,${total})">
-            <input type="checkbox" value="${o.label}" /><span>${o.label}</span>
+          ${choices.map(o=>`<label class="choice-item" onclick="toggleCheck(this)">
+            <input type="checkbox" value="${escHtml(o.label)}" /><span>${escHtml(o.label)}</span>
           </label>`).join('')}
         </div>`;
       } else if(q.type === 'scale') {
@@ -403,70 +659,74 @@ async function loadSurveyInfo() {
         const steps = Array.from({length: max-min+1}, (_,i)=>i+min);
         inner = `<div>
           <div class="scale-row" id="${qid}">
-            ${steps.map(n=>`<div class="scale-btn" onclick="selectScale(this,'${qid}',${n},${total})"><span class="scale-num">${n}</span></div>`).join('')}
+            ${steps.map(n=>`<div class="scale-btn" onclick="selectScale(this,'${qid}',${n})"><span class="scale-num">${n}</span></div>`).join('')}
           </div>
           <div class="scale-labels">
-            <span>${s.minLabel||''}</span><span>${s.maxLabel||''}</span>
+            <span>${escHtml(s.minLabel||'')}</span><span>${escHtml(s.maxLabel||'')}</span>
           </div>
         </div>`;
       } else if(q.type === 'ranking') {
         inner = `<div class="ranking-list" id="${qid}" ondragover="rankDragOver(event,'${qid}')" ondrop="rankDrop(event,'${qid}')">
           ${choices.map((o,i)=>`<div class="rank-item" draggable="true" ondragstart="rankDragStart(event)">
             <span class="rank-num">${i+1}</span>
-            <span class="rank-label">${o.label}</span>
+            <span class="rank-label">${escHtml(o.label)}</span>
             <span class="rank-grip"><svg viewBox="0 0 12 12" fill="none"><circle cx="4" cy="2.5" r="1" fill="currentColor"/><circle cx="8" cy="2.5" r="1" fill="currentColor"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="8" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="9.5" r="1" fill="currentColor"/><circle cx="8" cy="9.5" r="1" fill="currentColor"/></svg></span>
           </div>`).join('')}
           <p class="rank-hint">⠿ をドラッグして順番を入れ替えてください</p>
         </div>`;
-      } else if(q.type === 'description') {
-        return `<div class="desc-block"><p>${(q.settings&&q.settings.text)||q.title}</p></div>`;
-      } else if(q.type === 'cover') {
-        const coverBody  = q.settings?.coverBody     || '';
-        const btnLabel   = q.settings?.coverBtnLabel || '';
-        const style = q.settings?.coverStyle || 'white';
-        const bg = style === 'accent' ? 'linear-gradient(135deg,#5b52e8,#7c75ef)'
-                 : style === 'light'  ? '#f4f3f8'
-                 : '#ffffff';
-        const color    = style === 'accent' ? '#fff'                  : 'var(--text)';
-        const subColor = style === 'accent' ? 'rgba(255,255,255,.85)' : 'var(--text2)';
-        const btnBg    = style === 'accent' ? 'rgba(255,255,255,.18)' : 'var(--accent)';
-        const btnBorder= style === 'accent' ? '1.5px solid rgba(255,255,255,.45)' : 'none';
-        const btnHtml  = btnLabel
-          ? `<div style="margin-top:20px;">
-               <button class="cover-start-btn"
-                 onclick="var w=this.closest('[data-cover]');w.nextElementSibling?.scrollIntoView({behavior:'smooth'});w.style.display='none';"
-                 style="display:inline-flex;align-items:center;gap:8px;padding:11px 22px;background:${btnBg};color:#fff;border:${btnBorder};border-radius:9px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:opacity .15s;"
-                 onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
-                 ${btnLabel}
-                 <svg viewBox="0 0 16 16" fill="none" style="width:14px;height:14px;"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-               </button>
-             </div>`
-          : '';
-        return `<div data-cover="1" style="background:${bg};border-radius:12px;padding:28px 24px;margin-bottom:16px;border:1px solid rgba(0,0,0,.06);">
-          ${q.title   ? `<div style="font-size:20px;font-weight:700;color:${color};margin-bottom:${coverBody?'14px':'0'};line-height:1.4;">${q.title}</div>` : ''}
-          ${coverBody ? `<div style="font-size:14px;color:${subColor};line-height:1.9;white-space:pre-wrap;">${coverBody}</div>` : ''}
-          ${btnHtml}
-        </div>`;
+      } else if(q.type === 'matrix' || q.type === 'matrix_multi') {
+        const cols = (q.options||[]).filter(o=>o.option_type==='matrix_col').sort((a,b)=>a.position-b.position);
+        const rows = (q.options||[]).filter(o=>o.option_type==='matrix_row').sort((a,b)=>a.position-b.position);
+        const interval = q.settings?.interval || 5;
+        const isMulti  = q.type === 'matrix_multi';
+        const headerRow = () => `<tr>
+          <td style="min-width:120px;"></td>
+          ${cols.map(c=>`<td class="matrix-table th" style="text-align:center;padding:6px 4px;font-size:12px;font-weight:500;color:var(--text2);min-width:60px;vertical-align:bottom;">${escHtml(c.label)}</td>`).join('')}
+        </tr>`;
+        let tbl = `<div class="matrix-wrap"><table class="matrix-table">`;
+        rows.forEach((row,ri) => {
+          if(ri===0 || ri%interval===0) tbl += headerRow();
+          const bg = ri%2===0?'var(--surface)':'#f1f0f8';
+          const inputEl = isMulti
+            ? `<input type="checkbox" style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer;" name="${qid}_r${ri}" />`
+            : `<input type="radio" name="${qid}_r${ri}" style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer;" />`;
+          tbl += `<tr style="background:${bg};">
+            <td colspan="${cols.length+1}" style="padding:8px 6px 3px;font-size:13px;color:var(--text);"><span style="font-weight:700;color:var(--accent);margin-right:4px;">${ri+1}.</span>${escHtml(row.label)}</td>
+          </tr>
+          <tr style="background:${bg};">
+            <td style="padding:3px 6px 10px;text-align:center;font-size:14px;color:var(--accent);">⇒</td>
+            ${cols.map(()=>`<td style="text-align:center;padding:3px 3px 10px;">${inputEl}</td>`).join('')}
+          </tr>`;
+        });
+        tbl += `</table></div>`;
+        inner = tbl;
       }
 
-      return `<div class="q-block" data-qid="${qid}" data-required="${q.required}">
-        <div class="q-label">${q.title||''} ${req}</div>
+      return `<div class="q-block" data-page-qi="${qi}" data-qid="${qid}" data-required="${q.required}" style="display:none;">
+        <div class="q-label">${escHtml(q.title||'')} ${req}</div>
         ${inner}
         ${q.required?`<div class="error-msg" id="err_${qid}">この設問は必須です</div>`:''}
       </div>`;
-    }).join('');
+    });
 
+    container.innerHTML = htmlParts.join('');
+    document.getElementById('progressLabel').textContent = `0 / ${totalQ} 問`;
     document.getElementById('surveyBody').style.display = 'block';
-    updateProgress(total);
+    showPage(0);
   } catch(e) {
     console.error('loadSurveyInfo error:', e);
     document.getElementById('surveyBody').style.display = 'block';
+    showPage(0);
   }
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 loadSurveyInfo();
 
-// ランキングD&D
+// ── ランキングD&D ──
 let rankDragSrc = null;
 function rankDragStart(e) {
   rankDragSrc = e.currentTarget;
@@ -497,8 +757,6 @@ function renumberRank(listId) {
 document.addEventListener('dragend', () => {
   if(rankDragSrc) { rankDragSrc.classList.remove('dragging'); rankDragSrc = null; }
 });
-
-updateProgress();
 </script>
 </body>
 </html>

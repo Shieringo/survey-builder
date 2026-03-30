@@ -527,6 +527,10 @@ input[type=file] { display: none; }
               <svg viewBox="0 0 18 18" fill="none"><path d="M7.5 10.5a3.5 3.5 0 0 0 5 0l2-2a3.536 3.536 0 0 0-5-5l-1 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M10.5 7.5a3.5 3.5 0 0 0-5 0l-2 2a3.536 3.536 0 0 0 5 5l1-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
               <span>URL挿入</span>
             </div>
+            <div class="tool-btn" onclick="addQuestion('page_break')">
+              <svg viewBox="0 0 18 18" fill="none"><path d="M3 9h12M3 5h12M3 13h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M9 2v14" stroke="currentColor" stroke-width="1" stroke-dasharray="2 2" stroke-linecap="round" opacity=".5"/></svg>
+              <span>ページ区切</span>
+            </div>
             <div class="tool-btn" onclick="addQuestion('branch')">
               <svg viewBox="0 0 18 18" fill="none"><path d="M9 3v4M6 9l3 3 3-3M6 13h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
               <span>条件分岐</span>
@@ -585,6 +589,7 @@ input[type=file] { display: none; }
               <div class="type-choice" onclick="pickType('cover')"><div class="type-choice-icon" style="background:#fff3e0;color:#e65100;"><svg viewBox="0 0 20 20" fill="none"><rect x="3" y="2" width="14" height="16" rx="2" stroke="currentColor" stroke-width="1.4"/><path d="M6 7h8M6 10h8M6 13h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div><div><div class="type-choice-name">表紙</div><div class="type-choice-desc">長文の案内・説明</div></div></div>
               <div class="type-choice" onclick="pickType('description')"><div class="type-choice-icon" style="background:#f0f0f0;color:#505060;"><svg viewBox="0 0 20 20" fill="none"><path d="M4 6h12M4 9.5h12M4 13h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div><div><div class="type-choice-name">説明文</div><div class="type-choice-desc">テキストのみ表示</div></div></div>
               <div class="type-choice" onclick="pickType('url')"><div class="type-choice-icon" style="background:#e8f7ee;color:#1a7a4a;"><svg viewBox="0 0 20 20" fill="none"><path d="M8.5 12a4 4 0 0 0 5.5 0l2-2a4 4 0 0 0-5.5-5.5l-1 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M11.5 8a4 4 0 0 0-5.5 0l-2 2a4 4 0 0 0 5.5 5.5l1-1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div><div><div class="type-choice-name">URLリンク</div><div class="type-choice-desc">外部リンクを埋め込む</div></div></div>
+              <div class="type-choice" onclick="pickType('page_break')"><div class="type-choice-icon" style="background:#e8f7ee;color:#1a7a4a;"><svg viewBox="0 0 20 20" fill="none"><path d="M4 10h12M4 5h12M4 15h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M10 2v16" stroke="currentColor" stroke-width="1" stroke-dasharray="2 2" stroke-linecap="round" opacity=".5"/></svg></div><div><div class="type-choice-name">ページ区切り</div><div class="type-choice-desc">ここで次のページへ</div></div></div>
               <div class="type-choice" onclick="pickType('branch')"><div class="type-choice-icon" style="background:#fff3e0;color:#e0851a;"><svg viewBox="0 0 20 20" fill="none"><path d="M10 3v5M7 10l3 4 3-4M7 10H5M13 10h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><div class="type-choice-name">条件分岐</div><div class="type-choice-desc">回答でスキップ</div></div></div>
             </div>
           </div>
@@ -843,6 +848,7 @@ const typeLabels = {
   description: ['説明文',             'tag-textarea'],
   cover:       ['表紙',               'tag-textarea'],
   video:       ['動画',               'tag-image'],
+  page_break: ['ページ区切り',       'tag-url'],
   branch:      ['条件分岐',           'tag-select'],
 };
 
@@ -1072,7 +1078,22 @@ function buildQuestionBody(type, q) {
     return html;
   }
 
-  // ── 動画 ──
+  // ── ページ区切り ──
+  if(type === 'page_break') {
+    html += `
+      <div style="text-align:center;padding:8px 0;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="flex:1;height:2px;background:repeating-linear-gradient(90deg,var(--accent) 0,var(--accent) 8px,transparent 8px,transparent 16px);opacity:.5;border-radius:1px;"></div>
+          <span style="font-size:12px;font-weight:500;color:var(--accent);white-space:nowrap;padding:4px 12px;background:var(--accent-light);border-radius:20px;">ページ区切り — ここで次ページへ</span>
+          <div style="flex:1;height:2px;background:repeating-linear-gradient(90deg,var(--accent) 0,var(--accent) 8px,transparent 8px,transparent 16px);opacity:.5;border-radius:1px;"></div>
+        </div>
+        <p style="font-size:11px;color:var(--text3);margin-top:8px;">回答者はこの区切りで「次へ」ボタンを押して次のページへ進みます。</p>
+      </div>
+    `;
+    return html;
+  }
+
+  // ── 条件分岐 ──
   if(type === 'video') {
     const id = q.id;
     html += `
@@ -1124,27 +1145,28 @@ function buildQuestionBody(type, q) {
       </div>
     `;
   } else if(type === 'branch') {
+    const existingRules = q.branchRules || [];
     html += `
       <div class="field-row">
-        <div class="field-label">条件分岐ルール</div>
+        <div class="field-label">条件分岐ルール <span style="font-size:10px;color:var(--text3);font-weight:400;">直前の設問の回答によって次のページを切り替えます</span></div>
         <div class="branch-section">
           <div class="branch-title">
             <svg viewBox="0 0 13 13" fill="none"><path d="M6.5 2v4M4 8l2.5 3 2.5-3M4 8H2M9 8h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             分岐ルールを設定
           </div>
-          <div class="branch-rule">
-            <span style="font-size:12px;color:var(--text2)">もし</span>
-            <select class="branch-select"><option>Q2 サービス選択</option><option>Q3 満足度</option></select>
-            <span style="font-size:12px;color:var(--text2)">が</span>
-            <select class="branch-select"><option>Aプラン</option><option>Bプラン</option></select>
-            <span style="font-size:12px;color:var(--text2)">なら</span>
-            <select class="branch-select"><option>Q4へスキップ</option><option>Q5へスキップ</option><option>終了</option></select>
+          <div id="branchRules_${q.id}">
+            ${existingRules.length ? existingRules.map(r => buildBranchRuleHTML(q.id, r)).join('') : buildBranchRuleHTML(q.id, {})}
           </div>
-          <button class="add-option-btn" onclick="addBranchRule(this)">+ ルールを追加</button>
+          <button class="add-option-btn" onclick="addBranchRule('${q.id}')">+ ルールを追加</button>
+        </div>
+        <div style="margin-top:10px;padding:9px 12px;background:#fff8e8;border-radius:var(--radius-sm);border:1px solid #f0d080;font-size:12px;color:#7a5c00;line-height:1.6;">
+          💡 <strong>使い方：</strong>「ページ区切り」設問でアンケートをページに分け、このブロックをページの末尾に置いてください。<br>
+          指定の回答値に一致したとき、対応するページへジャンプします。
         </div>
       </div>
     `;
-  } else {
+    return html;
+  }
     // title input for normal questions
     html += `
       <div class="field-row">
@@ -1498,20 +1520,114 @@ function removeOption(btn) {
   btn.closest('.option-item').remove();
 }
 
-function addBranchRule(btn) {
-  const container = btn.parentNode;
-  const rule = document.createElement('div');
-  rule.className = 'branch-rule';
-  rule.innerHTML = `
-    <span style="font-size:12px;color:var(--text2)">もし</span>
-    <select class="branch-select"><option>Q2 サービス選択</option></select>
-    <span style="font-size:12px;color:var(--text2)">が</span>
-    <select class="branch-select"><option>Aプラン</option></select>
-    <span style="font-size:12px;color:var(--text2)">なら</span>
-    <select class="branch-select"><option>Q4へスキップ</option><option>終了</option></select>
-    <button class="icon-btn danger" onclick="this.closest('.branch-rule').remove()"><svg viewBox="0 0 13 13" fill="none"><path d="M3 3l7 7M10 3L3 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
-  `;
-  container.insertBefore(rule, btn);
+function addBranchRule(cardId) {
+  const container = document.getElementById('branchRules_' + cardId);
+  if(!container) return;
+  const div = document.createElement('div');
+  div.innerHTML = buildBranchRuleHTML(cardId, {});
+  container.appendChild(div.firstElementChild);
+  refreshBranchSelects();
+}
+
+// 分岐ルール1行のHTML
+function buildBranchRuleHTML(cardId, rule={}) {
+  const ruleId = 'br_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+  return `<div class="branch-rule" data-rule-id="${ruleId}" style="flex-wrap:wrap;gap:6px;margin-bottom:8px;align-items:center;">
+    <span style="font-size:12px;color:var(--text2);">もし</span>
+    <select class="branch-select branch-q-sel" data-card="${cardId}" onchange="updateBranchValueSel(this)">
+      <option value="">─ 設問を選択 ─</option>
+    </select>
+    <span style="font-size:12px;color:var(--text2);">が</span>
+    <select class="branch-select branch-v-sel">
+      <option value="*">（任意の回答）</option>
+    </select>
+    <span style="font-size:12px;color:var(--text2);">なら</span>
+    <select class="branch-select branch-t-sel">
+      <option value="end">→ アンケート終了</option>
+    </select>
+    <button class="icon-btn danger" onclick="this.closest('.branch-rule').remove()" title="削除">
+      <svg viewBox="0 0 13 13" fill="none"><path d="M3 3l7 7M10 3L3 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+  </div>`;
+}
+
+// 設問セレクトに選択肢セレクトを連動させる
+function updateBranchValueSel(qSel) {
+  const rule = qSel.closest('.branch-rule');
+  if(!rule) return;
+  const vSel = rule.querySelector('.branch-v-sel');
+  const qIdx = parseInt(qSel.value);
+  if(isNaN(qIdx)) { vSel.innerHTML = '<option value="*">（任意の回答）</option>'; return; }
+  const cards = [...document.querySelectorAll('.q-card')];
+  const card  = cards[qIdx];
+  if(!card) { vSel.innerHTML = '<option value="*">（任意の回答）</option>'; return; }
+  const type = card.dataset.type;
+  const id   = card.dataset.id;
+  const opts = [...card.querySelectorAll(`#opts_${id} .option-input`)].map(i=>i.value.trim()).filter(Boolean);
+  if(!opts.length) {
+    vSel.innerHTML = '<option value="*">（任意の回答）</option>';
+  } else {
+    vSel.innerHTML = '<option value="*">（任意の回答）</option>' + opts.map(o=>`<option value="${o.replace(/"/g,'&quot;')}">${o}</option>`).join('');
+  }
+}
+
+// 全branchカードのセレクトを最新の設問リストで再描画
+function refreshBranchSelects() {
+  const cards = [...document.querySelectorAll('.q-card')];
+  const answerableTypes = new Set(['radio','checkbox','select','scale','text','textarea','ranking']);
+
+  document.querySelectorAll('.branch-q-sel').forEach(qSel => {
+    const branchCardEl = qSel.closest('.q-card');
+    const branchCardIdx = cards.indexOf(branchCardEl);
+    const savedVal = qSel.value;
+    // 対象 = このbranchカードより前のpage_break区切り内にある設問
+    qSel.innerHTML = '<option value="">─ 設問を選択 ─</option>';
+    cards.forEach((c, ci) => {
+      if(ci >= branchCardIdx) return;
+      if(!answerableTypes.has(c.dataset.type)) return;
+      const num = document.getElementById('num_' + c.dataset.id)?.textContent || (ci+1);
+      const title = document.getElementById('preview_' + c.dataset.id)?.textContent || c.dataset.type;
+      qSel.innerHTML += `<option value="${ci}">Q${num}: ${title.substring(0,30)}</option>`;
+    });
+    if(savedVal !== '') qSel.value = savedVal;
+  });
+
+  // ターゲット（スキップ先ページ）セレクトを更新
+  // ページ区切りの位置を数える
+  const pageBreakPositions = [];
+  let pg = 0;
+  cards.forEach((c, ci) => {
+    if(c.dataset.type === 'page_break') { pg++; pageBreakPositions.push({ idx: ci, page: pg }); }
+  });
+
+  document.querySelectorAll('.branch-t-sel').forEach(tSel => {
+    const saved = tSel.value;
+    tSel.innerHTML = '<option value="end">→ アンケート終了</option>';
+    pageBreakPositions.forEach(pb => {
+      tSel.innerHTML += `<option value="${pb.page}">→ ${pb.page+1}ページ目へスキップ</option>`;
+    });
+    if(saved) tSel.value = saved;
+  });
+}
+
+// branchカードのルールをオブジェクト配列に変換（保存時に使用）
+function collectBranchRules(card) {
+  const cards = [...document.querySelectorAll('.q-card')];
+  const rules = [];
+  card.querySelectorAll('.branch-rule').forEach(rule => {
+    const qSel = rule.querySelector('.branch-q-sel');
+    const vSel = rule.querySelector('.branch-v-sel');
+    const tSel = rule.querySelector('.branch-t-sel');
+    if(!qSel || !tSel) return;
+    const sourceQIdx = parseInt(qSel.value);
+    if(isNaN(sourceQIdx)) return;
+    rules.push({
+      sourceQIdx,
+      value: vSel?.value || '*',
+      target: tSel.value === 'end' ? 'end' : parseInt(tSel.value)
+    });
+  });
+  return rules;
 }
 
 function toggleRequired(checkbox, id) {
@@ -1667,10 +1783,17 @@ function buildFullPreview() {
       return;
     }
 
+    if(type === 'branch') return;
+    if(type === 'page_break') {
+      html += `<div style="display:flex;align-items:center;gap:8px;margin:4px 0;">
+        <div style="flex:1;height:2px;background:repeating-linear-gradient(90deg,var(--accent) 0,var(--accent) 8px,transparent 8px,transparent 16px);opacity:.4;border-radius:1px;"></div>
+        <span style="font-size:12px;color:var(--accent);white-space:nowrap;padding:3px 10px;background:var(--accent-light);border-radius:20px;">↩ ページ区切り</span>
+        <div style="flex:1;height:2px;background:repeating-linear-gradient(90deg,var(--accent) 0,var(--accent) 8px,transparent 8px,transparent 16px);opacity:.4;border-radius:1px;"></div>
+      </div>`;
+      return;
+    }
+
     qNum++;
-    const titleEl = card.querySelector('.field-input[oninput*="syncTitle"]');
-    const qTitle = titleEl ? titleEl.value : '';
-    if(!qTitle) return;
     const requiredStar = card.querySelector('.q-required-star');
     const isReq = requiredStar && requiredStar.style.opacity !== '0';
 
@@ -1891,9 +2014,17 @@ function buildLivePreview() {
       return;
     }
     if(type === 'branch') return;
+    if(type === 'page_break') {
+      html += `<div class="prev-q-item" style="padding:4px 0;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div style="flex:1;height:1px;background:repeating-linear-gradient(90deg,var(--accent) 0,var(--accent) 4px,transparent 4px,transparent 8px);opacity:.5;"></div>
+          <span style="font-size:10px;color:var(--accent);white-space:nowrap;">↩ ページ区切り</span>
+          <div style="flex:1;height:1px;background:repeating-linear-gradient(90deg,var(--accent) 0,var(--accent) 4px,transparent 4px,transparent 8px);opacity:.5;"></div>
+        </div>
+      </div>`;
+      return;
+    }
     if(!qTitle) return;
-
-    html += `<div class="prev-q-item"><div class="pq-label">${qTitle} ${reqMark}</div>`;
 
     if(type === 'text') {
       html += `<div class="prev-fake-input" style="color:var(--text3);font-size:11px;">テキストを入力...</div>`;
@@ -1999,6 +2130,7 @@ function initCardDrag(card) {
     dragSrc = null;
     renumberCards();
     buildLivePreview();
+    refreshBranchSelects();
   });
 }
 
@@ -2146,6 +2278,7 @@ const cardDragObserver = new MutationObserver(mutations => {
       }
     });
   });
+  refreshBranchSelects();
 });
 cardDragObserver.observe(qList, { childList: true });
 
@@ -2260,6 +2393,7 @@ async function loadSurveyFromDB(id) {
         coverBody:     q.settings?.coverBody     || '',
         coverStyle:    q.settings?.coverStyle    || 'white',
         coverBtnLabel: q.settings?.coverBtnLabel || '',
+        branchRules:   q.settings?.rules         || [],
         dbId: q.id, // 元のDB上のIDを保持
       };
 
@@ -2272,6 +2406,7 @@ async function loadSurveyFromDB(id) {
     renumberCards();
     buildLivePreview();
     updateShareUrls();
+    refreshBranchSelects();
     // 回答タブの件数を更新
     if(currentSurveyId) {
       sbFetch(`responses?survey_id=eq.${currentSurveyId}&completed=eq.true&select=id`).then(res => {
@@ -2347,6 +2482,10 @@ async function saveSurveyToDB() {
         settings = {
           interval: parseInt(card.querySelector(`[id^="minterval_"]`)?.value)||5
         };
+      } else if(type === 'branch') {
+        settings = { rules: collectBranchRules(card) };
+      } else if(type === 'page_break') {
+        settings = {};
       }
 
       questions.push({ survey_id: currentSurveyId, type, title: qTitle, position: pos, required, settings });
