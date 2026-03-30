@@ -133,7 +133,7 @@ textarea.field { resize:vertical; min-height:100px; }
   text-align:center; padding:10px 4px 14px;
   font-size:13px; font-weight:500; color:var(--text2);
   vertical-align:bottom; line-height:1.4;
-  /* 2行固定 */
+  /* 2行固定・下揃え */
   display:table-cell;
   overflow:hidden;
 }
@@ -147,6 +147,10 @@ textarea.field { resize:vertical; min-height:100px; }
   height:calc(1.4em * 2);
   word-break:break-all;
   overflow-wrap:anywhere;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  align-items:center;
 }
 .matrix-th-arrow { width:48px; }
 /* サブ設問行（テキスト） */
