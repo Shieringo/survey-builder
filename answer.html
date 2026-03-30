@@ -133,7 +133,20 @@ textarea.field { resize:vertical; min-height:100px; }
   text-align:center; padding:10px 4px 14px;
   font-size:13px; font-weight:500; color:var(--text2);
   vertical-align:bottom; line-height:1.4;
-  word-break:keep-all; overflow-wrap:break-word;
+  /* 2行固定 */
+  display:table-cell;
+  overflow:hidden;
+}
+.matrix-th .th-inner {
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  overflow:hidden;
+  line-height:1.4;
+  min-height:calc(1.4em * 2);
+  height:calc(1.4em * 2);
+  word-break:break-all;
+  overflow-wrap:anywhere;
 }
 .matrix-th-arrow { width:48px; }
 /* サブ設問行（テキスト） */
@@ -714,7 +727,7 @@ async function loadSurveyInfo() {
         // ヘッダー行：各セル同じ幅・中央揃え・折り返し
         const headerRow = () => `<tr>
           <th class="matrix-th matrix-th-arrow"></th>
-          ${cols.map(c=>`<th class="matrix-th">${escHtml(c.label)}</th>`).join('')}
+          ${cols.map(c=>`<th class="matrix-th"><div class="th-inner">${escHtml(c.label)}</div></th>`).join('')}
         </tr>`;
 
         let tbl = `<div class="matrix-wrap"><table class="matrix-table">${colgroup}`;
