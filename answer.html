@@ -204,8 +204,6 @@ textarea.field { resize:vertical; min-height:100px; }
       次へ
       <svg viewBox="0 0 16 16" fill="none" style="width:14px;height:14px;"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
-  </div>
-  <div style="text-align:center; margin-top:20px;">
     <button class="btn-submit" id="submitBtn" onclick="submitSurvey()" style="display:none;">送信する</button>
   </div>
 </div>
@@ -632,6 +630,8 @@ async function loadSurveyInfo() {
       // ── 回答設問 ──
       pages[pageIdx].push(qi);
       totalQ++;
+      qAnswerIdx++;
+      const qNumLabel = `<span style="font-weight:700;color:var(--accent);margin-right:6px;">Q${qAnswerIdx}</span>`;
       let inner = '';
 
       if(q.type === 'text') {
@@ -705,7 +705,7 @@ async function loadSurveyInfo() {
       }
 
       return `<div class="q-block" data-page-qi="${qi}" data-qid="${qid}" data-required="${q.required}" style="display:none;">
-        <div class="q-label">${escHtml(q.title||'')} ${req}</div>
+        <div class="q-label">${qNumLabel}${escHtml(q.title||'')} ${req}</div>
         ${inner}
         ${q.required?`<div class="error-msg" id="err_${qid}">この設問は必須です</div>`:''}
       </div>`;
