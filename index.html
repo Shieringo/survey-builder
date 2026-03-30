@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Survey Builder — アンケートビルダー</title>
+<script>
+(function(){
+  var p = new URLSearchParams(location.search);
+  if(!p.get('id') && p.get('new') !== '1') {
+    location.replace('list.html');
+  }
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -1229,7 +1237,6 @@ function buildQuestionBody(type, q) {
         </div>
       `;
     }
-  }
 
   return html;
 }
@@ -2602,7 +2609,7 @@ function copyPubUrl() {
 async function loadSidebarSurveys() {
   try {
     const surveys = await sbFetch('surveys?select=id,title,responses(id)&order=created_at.desc&limit=10');
-const container = document.getElementById('sb-surveys');
+    const container = document.getElementById('sb-surveys');
     if(!container) return;
     const currentId = new URLSearchParams(location.search).get('id');
     container.innerHTML = surveys.map(s => `
