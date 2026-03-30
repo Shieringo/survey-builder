@@ -131,26 +131,19 @@ textarea.field { resize:vertical; min-height:100px; }
 /* ヘッダーセル */
 .matrix-th {
   text-align:center; padding:10px 4px 14px;
-  font-size:13px; font-weight:500; color:var(--text2);
-  vertical-align:bottom; line-height:1.4;
-  /* 2行固定・下揃え */
+  font-size:12px; font-weight:500; color:var(--text2);
+  vertical-align:bottom; line-height:1.35;
   display:table-cell;
-  overflow:hidden;
 }
 .matrix-th .th-inner {
-  display:-webkit-box;
-  -webkit-box-orient:vertical;
-  -webkit-line-clamp:2;
-  overflow:hidden;
-  line-height:1.4;
-  min-height:calc(1.4em * 2);
-  height:calc(1.4em * 2);
-  word-break:break-all;
-  overflow-wrap:anywhere;
   display:flex;
   flex-direction:column;
   justify-content:flex-end;
   align-items:center;
+  word-break:break-all;
+  overflow-wrap:anywhere;
+  line-height:1.35;
+  letter-spacing:-0.01em;
 }
 .matrix-th-arrow { width:48px; }
 /* サブ設問行（テキスト） */
