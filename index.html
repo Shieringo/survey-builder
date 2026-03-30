@@ -552,17 +552,17 @@ input[type=file] { display: none; }
           <input class="meta-title-input" id="surveyTitle" value="顧客満足度調査 2025" placeholder="アンケートタイトル" />
           <textarea class="meta-desc-input" id="surveyDesc" rows="2" placeholder="説明文（最初のページに表示されます）">このアンケートは当社サービスの品質向上を目的としています。ご協力をよろしくお願いいたします。</textarea>
           <div class="meta-row">
-            <div class="meta-tag">
+            <div class="meta-tag" id="metaTime" title="設問数から自動計算">
               <svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.2"/><path d="M6 3.5v3l1.5 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-              所要時間: 3分
+              <span id="metaTimeLabel">所要時間: 0分</span>
             </div>
-            <div class="meta-tag">
+            <div class="meta-tag" id="metaAnon" onclick="toggleAnonMeta()" title="クリックで匿名回答を切り替え" style="cursor:pointer;">
               <svg viewBox="0 0 12 12" fill="none"><path d="M2 2h8v8H2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
-              匿名回答
+              <span id="metaAnonLabel">匿名回答</span>
             </div>
-            <div class="meta-tag">
-              <svg viewBox="0 0 12 12" fill="none"><path d="M6 2l1 3h3l-2.5 2 1 3L6 8.5 3.5 10l1-3L2 5h3z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
-              公開中
+            <div class="meta-tag" id="metaStatus" onclick="openPublishModal()" title="クリックで公開設定を開く" style="cursor:pointer;">
+              <span id="metaStatusDot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--text3);margin-right:2px;"></span>
+              <span id="metaStatusLabel">下書き</span>
             </div>
           </div>
         </div>
@@ -1402,7 +1402,7 @@ function createCard(type, q) {
   const [label, tagClass] = typeLabels[type] || ['不明','tag-text'];
   const num = q.num;
   const id = q.id;
-  const title = (type === 'image') ? '画像 + 説明テキスト' : (q.title || '（設問を入力）');
+  const title = (type === 'image') ? '画像 + 説明テキスト' : (type === 'page_break') ? 'ページ区切り' : (q.title || '（設問を入力）');
 
   const card = document.createElement('div');
   card.className = 'q-card';
@@ -1506,7 +1506,14 @@ function renumberCards() {
 
 function syncTitle(input, id) {
   const el = document.getElementById('preview_' + id);
-  if(el) el.textContent = input.value || '（設問を入力）';
+  if(el) {
+    const card = input.closest('.q-card');
+    if(card && card.dataset.type === 'page_break') {
+      el.textContent = 'ページ区切り';
+    } else {
+      el.textContent = input.value || '（設問を入力）';
+    }
+  }
 }
 
 function addOption(id) {
@@ -1920,6 +1927,7 @@ function togglePubStatus() {
     : '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--text3);margin-right:5px;vertical-align:middle;"></span>非公開 · 回答を受け付けていません';
   const dot = document.querySelector('.status-dot');
   if(dot) dot.style.background = on ? 'var(--success)' : 'var(--text3)';
+  updateMetaStatus(on);
 }
 function copyPubUrl() {
   const val = document.getElementById('pubUrlInput').value;
@@ -2065,6 +2073,7 @@ function buildLivePreview() {
 
   const qCount = cards.length;
   document.getElementById('previewDesc').textContent = `全${qCount}問 · 所要時間 約${Math.max(1,Math.ceil(qCount*0.5))}分`;
+  updateMetaTime();
 
   body.innerHTML = html + `<button class="prev-submit-btn" id="previewSubmitBtn" style="background:${btnColor}">送信する</button>`;
 }
@@ -2361,6 +2370,7 @@ async function loadSurveyFromDB(id) {
     document.getElementById('surveyDesc').value  = survey.description || '';
     document.querySelector('.topbar-title').textContent = survey.title;
     document.querySelector('.topbar-sub').innerHTML = `<span class="status-dot" style="background:${survey.status==='active'?'#22a06b':'#aba8bb'};border-radius:50%;display:inline-block;width:6px;height:6px;margin-right:4px;"></span>${survey.status==='active'?'公開中':'下書き'}`;
+    updateMetaStatus(survey.status === 'active');
 
     // ヘッダー・ボタン色を反映
     if(survey.header_color) {
@@ -2624,6 +2634,44 @@ async function loadSidebarSurveys() {
   }
 }
 loadSidebarSurveys();
+
+
+// ── メタタグ更新 ──
+let metaAnonEnabled = true;
+
+function updateMetaTime() {
+  const cards = document.querySelectorAll('.q-card');
+  let qCount = 0;
+  cards.forEach(c => {
+    const t = c.dataset.type;
+    if(t !== 'page_break' && t !== 'branch' && t !== 'image' && t !== 'video' && t !== 'url' && t !== 'description' && t !== 'cover') qCount++;
+  });
+  const mins = Math.max(1, Math.ceil(qCount * 0.5));
+  const el = document.getElementById('metaTimeLabel');
+  if(el) el.textContent = '所要時間: ' + mins + '分';
+}
+
+function toggleAnonMeta() {
+  metaAnonEnabled = !metaAnonEnabled;
+  const tag = document.getElementById('metaAnon');
+  const label = document.getElementById('metaAnonLabel');
+  if(label) label.textContent = metaAnonEnabled ? '匿名回答' : '実名回答';
+  if(tag) {
+    tag.style.background = metaAnonEnabled ? '' : '#fce8e8';
+    tag.style.color = metaAnonEnabled ? '' : 'var(--danger)';
+    tag.style.borderColor = metaAnonEnabled ? '' : '#f0b0b0';
+  }
+  // 公開設定モーダルのトグルも同期
+  const anonToggle = document.querySelector('#publishModal input[type="checkbox"]');
+  if(anonToggle) anonToggle.checked = metaAnonEnabled;
+}
+
+function updateMetaStatus(isActive) {
+  const dot = document.getElementById('metaStatusDot');
+  const label = document.getElementById('metaStatusLabel');
+  if(dot) dot.style.background = isActive ? 'var(--success)' : 'var(--text3)';
+  if(label) label.textContent = isActive ? '公開中' : '下書き';
+}
 
 function showToastIndex(msg) {
   const t = document.createElement('div');
