@@ -425,47 +425,56 @@ async function exportCSV(surveyId, surveyTitle) {
     const answersAll = await Promise.all(
       responses.map(r => get(`answers?response_id=eq.${r.id}&select=*`))
     );
+
+    // 除外タイプ（表紙・説明文・ページ区切りなど回答不要）
     const NON_TYPES = new Set(['cover','description','image','video','url','page_break','branch']);
     const answerableQs = questions.filter(q => !NON_TYPES.has(q.type));
 
-    // ── ヘッダー生成（1行・タブ区切り）──
-    const SP = '　'; // 全角スペース
+    // 全角スペース（ヘッダー区切り用）
+    const SP = String.fromCharCode(0x3000);
+
+    // ── ヘッダー生成 ──
     const headers = ['回答者ID', '回答日時'];
     let qNum = 0;
     answerableQs.forEach(q => {
       qNum++;
-      const mRows = (q.options||[]).filter(o=>o.option_type==='matrix_row').sort((a,b)=>a.position-b.position);
+      const mRows = (q.options||[])
+        .filter(o => o.option_type === 'matrix_row')
+        .sort((a,b) => a.position - b.position);
       const reqMark = q.required ? ' ※必須' : '';
+      const title = q.title || '';
 
-      if((q.type==='matrix'||q.type==='matrix_multi') && mRows.length) {
-        // マトリクス: 子設問ごとに1列 Q{n}S{i+1}　{タイトル}{reqMark} {i+1}.{子設問文}
+      if ((q.type === 'matrix' || q.type === 'matrix_multi') && mRows.length) {
+        // マトリクス: 子設問ごとに1列
         mRows.forEach((row, ri) => {
-          headers.push(`Q${qNum}S${ri+1}${SP}${q.title||''}${reqMark} ${ri+1}．${row.label}`);
+          headers.push('Q' + qNum + 'S' + (ri+1) + SP + title + reqMark + ' ' + (ri+1) + '．' + row.label);
         });
-      } else if(q.type==='text' || q.type==='textarea') {
-        // テキスト(FA): Q{n}S1FA　{設問文} ご回答
-        headers.push(`Q${qNum}S1FA${SP}${q.title||''} ご回答`);
+      } else if (q.type === 'text' || q.type === 'textarea') {
+        // テキスト自由回答 (FA)
+        headers.push('Q' + qNum + 'S1FA' + SP + title + ' ご回答');
       } else {
-        // 通常選択肢: Q{n}　{設問文}
-        headers.push(`Q${qNum}${SP}${q.title||''}`);
+        // 通常設問
+        headers.push('Q' + qNum + SP + title);
       }
     });
 
     // ── データ行生成 ──
     const dataRows = responses.map((resp, ri) => {
       const ansMap = {};
-      (answersAll[ri]||[]).forEach(a => { ansMap[a.question_id] = a; });
+      (answersAll[ri] || []).forEach(a => { ansMap[a.question_id] = a; });
 
       const row = [
-        ri + 1,
+        String(ri + 1),
         resp.finished_at ? new Date(resp.finished_at).toLocaleString('ja-JP') : ''
       ];
 
       answerableQs.forEach(q => {
-        const val = ansMap[q.id]?.value || '';
-        const mRows = (q.options||[]).filter(o=>o.option_type==='matrix_row').sort((a,b)=>a.position-b.position);
+        const val = ansMap[q.id] ? (ansMap[q.id].value || '') : '';
+        const mRows = (q.options||[])
+          .filter(o => o.option_type === 'matrix_row')
+          .sort((a,b) => a.position - b.position);
 
-        if((q.type==='matrix'||q.type==='matrix_multi') && mRows.length) {
+        if ((q.type === 'matrix' || q.type === 'matrix_multi') && mRows.length) {
           let parsed = {};
           try { parsed = JSON.parse(val); } catch(e) {}
           mRows.forEach((mrow, ri2) => {
@@ -481,23 +490,40 @@ async function exportCSV(surveyId, surveyTitle) {
     });
 
     // ── TSV出力（タブ区切り・BOM付きUTF-8）──
-    const BOM = '﻿';
-    const lines = [headers, ...dataRows].map(r =>
-      r.map(v => String(v).replace(/\t/g, ' ').replace(/\r?\n/g, ' ')).join('\t')
-    );
-    const tsv = BOM + lines.join('\r\n');
-    const blob = new Blob([tsv], { type: 'text/csv;charset=utf-8;' });
+    const TAB = String.fromCharCode(9);
+    const CR = String.fromCharCode(13);
+    const LF = String.fromCharCode(10);
+    const CRLF = CR + LF;
+    const BOM = String.fromCharCode(0xFEFF);
+
+    const sanitize = function(v) {
+      return String(v)
+        .split(TAB).join(' ')
+        .split(CR).join(' ')
+        .split(LF).join(' ');
+    };
+
+    const lines = [headers].concat(dataRows).map(function(r) {
+      return r.map(sanitize).join(TAB);
+    });
+    const tsv = BOM + lines.join(CRLF);
+
+    const blob = new Blob([tsv], { type: 'text/tab-separated-values;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${surveyTitle}_回答データ_${new Date().toISOString().slice(0,10)}.csv`;
-    document.body.appendChild(a); a.click();
-    document.body.removeChild(a); URL.revokeObjectURL(url);
+    a.download = surveyTitle + '_回答データ_' + new Date().toISOString().slice(0,10) + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
   } catch(e) {
     console.error(e);
     alert('CSV出力エラー: ' + e.message);
   }
 }
+
 
 
 // サイドバーのアンケート一覧をDBから生成
