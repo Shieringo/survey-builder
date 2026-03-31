@@ -75,6 +75,7 @@ tr.clickable:hover td{background:var(--surface2);cursor:pointer;}
 .ans-label{font-size:10px;color:var(--text3);margin-bottom:4px;}
 .ans-value{font-size:13px;color:var(--text);line-height:1.5;}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -132,7 +133,7 @@ tr.clickable:hover td{background:var(--surface2);cursor:pointer;}
       </button>
       <button class="btn" onclick="exportCSV()">
         <svg viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        CSV出力
+        Excel出力
       </button>
     </div>
 
@@ -299,29 +300,20 @@ document.getElementById('detailModal').addEventListener('click', e => {
 });
 
 function exportCSV() {
-  // 除外タイプ
   const NON_TYPES = new Set(['cover','description','image','video','url','page_break','branch']);
   const answerableQs = questions.filter(q => !NON_TYPES.has(q.type));
-
-  // 全角スペース・制御文字はString.fromCharCode で安全に生成
-  const SP   = String.fromCharCode(0x3000);
-  const TAB  = String.fromCharCode(9);
-  const CR   = String.fromCharCode(13);
-  const LF   = String.fromCharCode(10);
-  const CRLF = CR + LF;
-  const BOM  = String.fromCharCode(0xFEFF);
+  const SP = String.fromCharCode(0x3000);
 
   // ── ヘッダー生成 ──
   const headers = ['回答者ID', '回答日時'];
   let qNum = 0;
   answerableQs.forEach(function(q) {
     qNum++;
-    const mRows = (q.options || [])
+    const mRows = (q.options||[])
       .filter(function(o) { return o.option_type === 'matrix_row'; })
       .sort(function(a,b) { return a.position - b.position; });
     const reqMark = q.required ? ' ※必須' : '';
     const title = q.title || '';
-
     if ((q.type === 'matrix' || q.type === 'matrix_multi') && mRows.length) {
       mRows.forEach(function(row, ri) {
         headers.push('Q' + qNum + 'S' + (ri+1) + SP + title + reqMark + ' ' + (ri+1) + '．' + row.label);
@@ -338,19 +330,13 @@ function exportCSV() {
     const rAns = allAnswers.filter(function(a) { return a.response_id === resp.id; });
     const ansMap = {};
     rAns.forEach(function(a) { ansMap[a.question_id] = a; });
-
-    const row = [
-      String(ri + 1),
-      resp.finished_at ? new Date(resp.finished_at).toLocaleString('ja-JP') : ''
-    ];
-
+    const row = [ri + 1, resp.finished_at ? new Date(resp.finished_at).toLocaleString('ja-JP') : ''];
     answerableQs.forEach(function(q) {
       const ans = ansMap[q.id];
       const val = ans ? (ans.value || '') : '';
-      const mRows = (q.options || [])
+      const mRows = (q.options||[])
         .filter(function(o) { return o.option_type === 'matrix_row'; })
         .sort(function(a,b) { return a.position - b.position; });
-
       if ((q.type === 'matrix' || q.type === 'matrix_multi') && mRows.length) {
         let parsed = {};
         try { parsed = JSON.parse(val); } catch(e) {}
@@ -366,25 +352,23 @@ function exportCSV() {
     return row;
   });
 
-  // ── TSV出力（タブ区切り・BOM付きUTF-8）──
-  const sanitize = function(v) {
-    return String(v).split(TAB).join(' ').split(CR).join(' ').split(LF).join(' ');
-  };
-  const lines = [headers].concat(dataRows).map(function(r) {
-    return r.map(sanitize).join(TAB);
-  });
-  const tsv = BOM + lines.join(CRLF);
+  // ── SheetJS で xlsx 生成 ──
+  const wsData = [headers].concat(dataRows);
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-  const blob = new Blob([tsv], { type: 'text/tab-separated-values;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = (document.getElementById('topbar-title').textContent || 'アンケート') +
-               '_回答データ_' + new Date().toISOString().slice(0,10) + '.csv';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  // 列幅を自動調整
+  ws['!cols'] = headers.map(function(h, ci) {
+    const maxLen = Math.max(
+      String(h).length,
+      dataRows.reduce(function(m, r) { return Math.max(m, String(r[ci] || '').length); }, 0)
+    );
+    return { wch: Math.min(Math.max(maxLen, 8), 60) };
+  });
+
+  const surveyTitle = document.getElementById('topbar-title').textContent || 'アンケート';
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '回答データ');
+  XLSX.writeFile(wb, surveyTitle + '_回答データ_' + new Date().toISOString().slice(0,10) + '.xlsx');
 }
 
 

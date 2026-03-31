@@ -117,6 +117,7 @@ tr.clickable:hover td{background:var(--surface2);cursor:pointer;}
 .csv-survey-item-title{font-size:13px;font-weight:500;color:var(--text);}
 .csv-survey-item-count{font-size:11px;color:var(--text3);}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -165,7 +166,7 @@ tr.clickable:hover td{background:var(--surface2);cursor:pointer;}
       <div class="topbar-title">回答データ</div>
       <button class="btn" onclick="openCsvModal()">
         <svg viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3M2 11h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        CSV出力
+        Excel出力
       </button>
     </div>
 
@@ -426,34 +427,27 @@ async function exportCSV(surveyId, surveyTitle) {
       responses.map(r => get(`answers?response_id=eq.${r.id}&select=*`))
     );
 
-    // 除外タイプ（表紙・説明文・ページ区切りなど回答不要）
     const NON_TYPES = new Set(['cover','description','image','video','url','page_break','branch']);
     const answerableQs = questions.filter(q => !NON_TYPES.has(q.type));
-
-    // 全角スペース（ヘッダー区切り用）
     const SP = String.fromCharCode(0x3000);
 
     // ── ヘッダー生成 ──
     const headers = ['回答者ID', '回答日時'];
     let qNum = 0;
-    answerableQs.forEach(q => {
+    answerableQs.forEach(function(q) {
       qNum++;
       const mRows = (q.options||[])
         .filter(o => o.option_type === 'matrix_row')
         .sort((a,b) => a.position - b.position);
       const reqMark = q.required ? ' ※必須' : '';
       const title = q.title || '';
-
       if ((q.type === 'matrix' || q.type === 'matrix_multi') && mRows.length) {
-        // マトリクス: 子設問ごとに1列
         mRows.forEach((row, ri) => {
           headers.push('Q' + qNum + 'S' + (ri+1) + SP + title + reqMark + ' ' + (ri+1) + '．' + row.label);
         });
       } else if (q.type === 'text' || q.type === 'textarea') {
-        // テキスト自由回答 (FA)
         headers.push('Q' + qNum + 'S1FA' + SP + title + ' ご回答');
       } else {
-        // 通常設問
         headers.push('Q' + qNum + SP + title);
       }
     });
@@ -461,19 +455,13 @@ async function exportCSV(surveyId, surveyTitle) {
     // ── データ行生成 ──
     const dataRows = responses.map((resp, ri) => {
       const ansMap = {};
-      (answersAll[ri] || []).forEach(a => { ansMap[a.question_id] = a; });
-
-      const row = [
-        String(ri + 1),
-        resp.finished_at ? new Date(resp.finished_at).toLocaleString('ja-JP') : ''
-      ];
-
+      (answersAll[ri]||[]).forEach(a => { ansMap[a.question_id] = a; });
+      const row = [ri + 1, resp.finished_at ? new Date(resp.finished_at).toLocaleString('ja-JP') : ''];
       answerableQs.forEach(q => {
         const val = ansMap[q.id] ? (ansMap[q.id].value || '') : '';
         const mRows = (q.options||[])
           .filter(o => o.option_type === 'matrix_row')
           .sort((a,b) => a.position - b.position);
-
         if ((q.type === 'matrix' || q.type === 'matrix_multi') && mRows.length) {
           let parsed = {};
           try { parsed = JSON.parse(val); } catch(e) {}
@@ -489,38 +477,35 @@ async function exportCSV(surveyId, surveyTitle) {
       return row;
     });
 
-    // ── TSV出力（タブ区切り・BOM付きUTF-8）──
-    const TAB = String.fromCharCode(9);
-    const CR = String.fromCharCode(13);
-    const LF = String.fromCharCode(10);
-    const CRLF = CR + LF;
-    const BOM = String.fromCharCode(0xFEFF);
+    // ── SheetJS で xlsx 生成 ──
+    const wsData = [headers, ...dataRows];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-    const sanitize = function(v) {
-      return String(v)
-        .split(TAB).join(' ')
-        .split(CR).join(' ')
-        .split(LF).join(' ');
-    };
-
-    const lines = [headers].concat(dataRows).map(function(r) {
-      return r.map(sanitize).join(TAB);
+    // 列幅を自動調整
+    const colWidths = headers.map((h, ci) => {
+      const maxLen = Math.max(
+        String(h).length,
+        ...dataRows.map(r => String(r[ci] || '').length)
+      );
+      return { wch: Math.min(Math.max(maxLen, 8), 60) };
     });
-    const tsv = BOM + lines.join(CRLF);
+    ws['!cols'] = colWidths;
 
-    const blob = new Blob([tsv], { type: 'text/tab-separated-values;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = surveyTitle + '_回答データ_' + new Date().toISOString().slice(0,10) + '.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    // ヘッダー行を太字に
+    headers.forEach((_, ci) => {
+      const cellRef = XLSX.utils.encode_cell({ r: 0, c: ci });
+      if (ws[cellRef]) {
+        ws[cellRef].s = { font: { bold: true } };
+      }
+    });
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '回答データ');
+    XLSX.writeFile(wb, surveyTitle + '_回答データ_' + new Date().toISOString().slice(0,10) + '.xlsx');
 
   } catch(e) {
     console.error(e);
-    alert('CSV出力エラー: ' + e.message);
+    alert('Excel出力エラー: ' + e.message);
   }
 }
 
