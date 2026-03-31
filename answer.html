@@ -755,9 +755,6 @@ async function loadSurveyInfo() {
         rows.forEach((row, ri) => {
           if(ri===0 || ri%interval===0) tbl += headerRow();
           const bg = ri%2===0 ? 'var(--surface)' : '#f1f0f8';
-          const inputEl = isMulti
-            ? `<input type="checkbox" style="accent-color:var(--accent);" name="${qid}_r${ri}" value="${escHtml(col.label)}" />`
-            : `<input type="radio"    style="accent-color:var(--accent);" name="${qid}_r${ri}" value="${escHtml(col.label)}" />`;
 
           // テキスト行（colspan全幅）
           tbl += `<tr style="background:${bg};">
@@ -766,10 +763,15 @@ async function loadSurveyInfo() {
             </td>
           </tr>`;
 
-          // ラジオ行（等間隔）
+          // ラジオ行（等間隔・各セルでcolを参照してvalueを設定）
           tbl += `<tr style="background:${bg};">
             <td class="matrix-arrow-cell">⇒</td>
-            ${cols.map(col=>`<td class="matrix-radio-cell">${inputEl}</td>`).join('')}
+            ${cols.map(col => {
+              const inputEl = isMulti
+                ? `<input type="checkbox" style="accent-color:var(--accent);" name="${qid}_r${ri}" value="${escHtml(col.label)}" />`
+                : `<input type="radio"    style="accent-color:var(--accent);" name="${qid}_r${ri}" value="${escHtml(col.label)}" />`;
+              return `<td class="matrix-radio-cell">${inputEl}</td>`;
+            }).join('')}
           </tr>`;
 
           if(ri < rows.length-1) tbl += `<tr class="matrix-separator"><td colspan="${cols.length+1}"></td></tr>`;
