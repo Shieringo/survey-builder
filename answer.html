@@ -54,7 +54,7 @@ body { font-family:var(--font); background:var(--bg); color:var(--text); min-hei
   animation:fadeUp .2s ease;
 }
 @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-.q-label { font-size:16px; font-weight:500; color:var(--text); margin-bottom:16px; line-height:1.6; }
+.q-label { font-size:16px; font-weight:500; color:var(--text); margin-bottom:16px; line-height:1.6; white-space:pre-wrap; word-break:break-word; }
 .q-required { color:var(--danger); font-size:13px; margin-left:3px; }
 .q-desc { font-size:13px; color:var(--text2); margin-top:-8px; margin-bottom:12px; line-height:1.6; }
 
@@ -755,7 +755,7 @@ async function loadSurveyInfo() {
       }
 
       return `<div class="q-block" data-page-qi="${qi}" data-qid="${qid}" data-required="${q.required}" style="display:none;">
-        <div class="q-label">${qNumLabel}${escHtml(q.title||'')} ${req}</div>
+        <div class="q-label">${qNumLabel}${escHtmlNl(q.title||'')} ${req}</div>
         ${inner}
         ${q.required?`<div class="error-msg" id="err_${qid}">この設問は必須です</div>`:''}
       </div>`;
@@ -774,6 +774,9 @@ async function loadSurveyInfo() {
 
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escHtmlNl(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\n/g,'&#10;');
 }
 
 loadSurveyInfo();
