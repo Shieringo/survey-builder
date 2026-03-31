@@ -10,6 +10,8 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;}
 .app{display:flex;height:100vh;}
+
+/* SIDEBAR */
 .sidebar{width:220px;background:#1a1825;flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;position:relative;}
 .sidebar::before{content:'';position:absolute;top:-60px;right:-30px;width:160px;height:160px;background:radial-gradient(circle,rgba(91,82,232,.35) 0%,transparent 70%);pointer-events:none;}
 .sb-logo{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.07);}
@@ -18,35 +20,44 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 .logo-icon svg{width:13px;height:13px;}
 .logo-text{font-size:15px;font-weight:500;color:#fff;}
 .logo-sub{font-size:10px;color:rgba(255,255,255,.35);margin-top:2px;margin-left:34px;}
-.sb-nav{padding:10px 0;flex:1;overflow-y:auto;}
+.sb-nav{padding:10px 0;flex:1;}
 .sb-sec{padding:10px 10px 4px;font-size:9px;font-weight:500;color:rgba(255,255,255,.25);letter-spacing:.1em;text-transform:uppercase;}
 .sb-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;margin:1px 6px;font-size:12px;color:rgba(255,255,255,.55);cursor:pointer;transition:all .15s;}
 .sb-item:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.85);}
 .sb-item.active{background:rgba(91,82,232,.25);color:#fff;border-left:2px solid #7c75ef;}
 .sb-item svg{width:13px;height:13px;opacity:.7;flex-shrink:0;}
 .sb-item.active svg{opacity:1;}
+.sb-badge{margin-left:auto;font-size:10px;background:var(--accent);color:#fff;padding:1px 6px;border-radius:8px;}
 .sb-footer{padding:10px;border-top:1px solid rgba(255,255,255,.06);margin-top:auto;}
 .sb-user{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;cursor:pointer;}
 .sb-user:hover{background:rgba(255,255,255,.06);}
 .sb-avatar{width:26px;height:26px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#fff;}
 .sb-user .name{font-size:11px;color:rgba(255,255,255,.8);font-weight:500;}
 .sb-user .role{font-size:9px;color:rgba(255,255,255,.3);}
+
+/* MAIN */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
 .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;height:52px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
 .topbar-title{font-size:15px;font-weight:500;flex:1;}
 .btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--radius-sm);font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:var(--font);transition:all .15s;}
 .btn:hover{background:var(--surface2);}
 .btn svg{width:12px;height:12px;}
+
+/* BODY */
 .body{flex:1;overflow-y:auto;padding:20px;}
 .body::-webkit-scrollbar{width:5px;}
 .body::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);border-radius:3px;}
+
+/* KPI */
 .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;}
 .kpi-card{background:var(--surface);border-radius:var(--radius);padding:14px 16px;border:1px solid var(--border);box-shadow:var(--shadow);}
 .kpi-label{font-size:11px;color:var(--text3);margin-bottom:5px;}
 .kpi-num{font-size:24px;font-weight:700;color:var(--text);}
+
+/* TABLE */
 .card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden;}
-.table-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;}
-.table-title{font-size:13px;font-weight:500;white-space:nowrap;}
+.table-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.table-title{font-size:13px;font-weight:500;}
 .search{padding:6px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);font-size:12px;font-family:var(--font);background:var(--surface2);color:var(--text);outline:none;width:200px;}
 .search:focus{border-color:var(--accent);}
 table{width:100%;border-collapse:collapse;}
@@ -59,8 +70,11 @@ tr.clickable:hover td{background:var(--surface2);cursor:pointer;}
 .badge-gray{background:var(--surface2);color:var(--text3);border:1px solid var(--border);}
 .badge-red{background:#fce8e8;color:#b03030;}
 .status-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:4px;}
+
+/* MINI BAR */
 .mini-bar-wrap{width:80px;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;}
 .mini-bar-fill{height:100%;border-radius:3px;background:var(--accent);}
+
 .icon-btn{width:26px;height:26px;border-radius:5px;border:1px solid var(--border);background:var(--surface);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;}
 .icon-btn:hover{background:var(--accent-light);border-color:var(--accent);}
 .icon-btn svg{width:12px;height:12px;color:var(--text2);}
@@ -80,25 +94,24 @@ tr.clickable:hover td{background:var(--surface2);cursor:pointer;}
 .resp-meta{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border);}
 .resp-meta-item{font-size:12px;color:var(--text2);}
 .resp-meta-item strong{color:var(--text);font-weight:500;}
-.ans-block{margin-bottom:16px;padding:14px 16px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);}
-.ans-q{font-size:11px;font-weight:600;color:var(--accent);margin-bottom:4px;letter-spacing:.02em;}
-.ans-label{font-size:12px;font-weight:500;color:var(--text);margin-bottom:6px;line-height:1.5;white-space:pre-wrap;}
-.ans-val{font-size:13px;color:var(--text2);line-height:1.6;}
+.ans-block{margin-bottom:12px;padding:12px 14px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);}
+.ans-q{font-size:10px;font-weight:700;color:var(--accent);margin-bottom:3px;letter-spacing:.04em;}
+.ans-label{font-size:12px;font-weight:500;color:var(--text);margin-bottom:5px;line-height:1.5;white-space:pre-wrap;}
+.ans-val{font-size:13px;color:var(--text2);line-height:1.6;white-space:pre-wrap;}
 .ans-val-empty{font-size:12px;color:var(--text3);font-style:italic;}
 .matrix-mini{border-collapse:collapse;width:100%;font-size:11px;margin-top:4px;}
 .matrix-mini th{text-align:center;padding:4px 8px;background:var(--surface);border:1px solid var(--border);color:var(--text2);font-weight:500;}
 .matrix-mini td{padding:4px 8px;border:1px solid var(--border);color:var(--text2);}
 .matrix-mini td:first-child{color:var(--text);font-weight:500;}
 .matrix-mini tr:nth-child(even) td{background:#f1f0f8;}
-
 /* CSV選択モーダル */
 .csv-modal-overlay{display:none;position:fixed;inset:0;z-index:2000;background:rgba(26,24,37,.5);align-items:center;justify-content:center;}
 .csv-modal-overlay.open{display:flex;}
-.csv-modal-box{background:var(--surface);border-radius:var(--radius);width:400px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.22);overflow:hidden;}
+.csv-modal-box{background:var(--surface);border-radius:var(--radius);width:420px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.22);overflow:hidden;}
 .csv-modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);}
 .csv-modal-head-title{font-size:14px;font-weight:500;}
 .csv-modal-body{padding:20px;}
-.csv-survey-list{display:flex;flex-direction:column;gap:6px;max-height:320px;overflow-y:auto;}
+.csv-survey-list{display:flex;flex-direction:column;gap:6px;max-height:360px;overflow-y:auto;}
 .csv-survey-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface2);cursor:pointer;transition:all .15s;}
 .csv-survey-item:hover{border-color:var(--accent);background:var(--accent-light);}
 .csv-survey-item-title{font-size:13px;font-weight:500;color:var(--text);}
@@ -107,6 +120,8 @@ tr.clickable:hover td{background:var(--surface2);cursor:pointer;}
 </head>
 <body>
 <div class="app">
+
+  <!-- SIDEBAR -->
   <div class="sidebar">
     <div class="sb-logo">
       <div class="logo-row">
@@ -144,6 +159,7 @@ tr.clickable:hover td{background:var(--surface2);cursor:pointer;}
     </div>
   </div>
 
+  <!-- MAIN -->
   <div class="main">
     <div class="topbar">
       <div class="topbar-title">回答データ</div>
@@ -154,12 +170,23 @@ tr.clickable:hover td{background:var(--surface2);cursor:pointer;}
     </div>
 
     <div class="body">
+      <!-- KPI -->
       <div class="kpi-grid">
-        <div class="kpi-card"><div class="kpi-label">総回答数</div><div class="kpi-num" id="kpi-total">—</div></div>
-        <div class="kpi-card"><div class="kpi-label">回答のあるアンケート</div><div class="kpi-num" id="kpi-surveys" style="color:var(--accent);">—</div></div>
-        <div class="kpi-card"><div class="kpi-label">今週の新着</div><div class="kpi-num" id="kpi-week" style="color:var(--success);">—</div></div>
+        <div class="kpi-card">
+          <div class="kpi-label">総回答数</div>
+          <div class="kpi-num" id="kpi-total">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">回答のあるアンケート</div>
+          <div class="kpi-num" id="kpi-surveys" style="color:var(--accent);">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">今週の新着</div>
+          <div class="kpi-num" id="kpi-week" style="color:var(--success);">—</div>
+        </div>
       </div>
 
+      <!-- アンケート別回答一覧 -->
       <div class="card">
         <div class="table-header">
           <div class="table-title" id="table-title">アンケート別 回答データ</div>
@@ -185,7 +212,7 @@ tr.clickable:hover td{background:var(--surface2);cursor:pointer;}
   </div>
 </div>
 
-<!-- 回答者詳細モーダル -->
+<!-- 回答者一覧・詳細モーダル -->
 <div class="modal-overlay" id="detailModal" onclick="if(event.target===this)closeDetail()">
   <div class="modal-box">
     <div class="modal-head">
@@ -198,7 +225,7 @@ tr.clickable:hover td{background:var(--surface2);cursor:pointer;}
   </div>
 </div>
 
-<!-- CSV出力アンケート選択モーダル -->
+<!-- CSV出力 アンケート選択モーダル -->
 <div class="csv-modal-overlay" id="csvModal" onclick="if(event.target===this)closeCsvModal()">
   <div class="csv-modal-box">
     <div class="csv-modal-head">
@@ -220,35 +247,43 @@ const get = path => fetch(`${SB_URL}/rest/v1/${path}`, {
   headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` }
 }).then(r => r.json());
 
-const STATUS_LABELS  = { active:'公開中', draft:'下書き', closed:'終了' };
+const STATUS_LABELS = { active:'公開中', draft:'下書き', closed:'終了' };
 const STATUS_CLASSES = { active:'badge-green', draft:'badge-gray', closed:'badge-red' };
-// 表紙・説明文など回答不要タイプ
-const NON_ANSWER_TYPES = new Set(['cover','description','image','video','url','page_break','branch']);
 
 let allRows = [];
 
-// ── メインデータ読み込み ──
 async function loadResponses() {
   try {
+    // 全アンケートを取得
     const surveys = await get('surveys?select=id,title,status,created_at&order=created_at.desc');
+
+    // 各アンケートの回答数・最終回答日を取得
     const stats = await Promise.all(surveys.map(async s => {
       const responses = await get(`responses?survey_id=eq.${s.id}&completed=eq.true&select=id,finished_at&order=finished_at.desc`);
-      return { surveyId: s.id, count: responses.length, lastDate: responses[0]?.finished_at || null };
+      const lastDate = responses[0]?.finished_at || null;
+      return { surveyId: s.id, count: responses.length, lastDate };
     }));
+
+    // KPI計算
     const totalResp = stats.reduce((a,s) => a + s.count, 0);
     const surveysWithResp = stats.filter(s => s.count > 0).length;
     const weekAgo = new Date(Date.now() - 7*24*60*60*1000);
     const weekCount = stats.reduce((a, s) => {
-      if(s.lastDate && new Date(s.lastDate) > weekAgo) return a + s.count; return a;
+      if(s.lastDate && new Date(s.lastDate) > weekAgo) return a + s.count;
+      return a;
     }, 0);
+
     document.getElementById('kpi-total').textContent = totalResp;
     document.getElementById('kpi-surveys').textContent = surveysWithResp;
     document.getElementById('kpi-week').textContent = weekCount;
     document.getElementById('table-title').textContent = `アンケート別 回答データ（${surveys.length}件）`;
+
+    // テーブル描画
     allRows = surveys.map((s, i) => ({ survey: s, stat: stats[i] }));
     renderTable(allRows);
+
   } catch(e) {
-    console.error(e);
+    console.error('loadResponses error:', e);
     document.getElementById('responseTable').innerHTML =
       '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--danger);">読み込みエラー</td></tr>';
   }
@@ -266,7 +301,7 @@ function renderTable(rows) {
     const sl = STATUS_LABELS[s.status] || '不明';
     const dotColor = s.status==='active' ? '#22a06b' : s.status==='closed' ? '#e24b4a' : '#aba8bb';
     const lastDate = stat.lastDate
-      ? new Date(stat.lastDate).toLocaleDateString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})
+      ? new Date(stat.lastDate).toLocaleDateString('ja-JP', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})
       : '—';
     const barPct = maxCount > 0 ? Math.round(stat.count / maxCount * 100) : 0;
     return `<tr class="clickable" onclick="openRespondentList('${s.id}','${s.title.replace(/'/g,"\\'")}')">
@@ -282,7 +317,7 @@ function renderTable(rows) {
       <td style="color:var(--text3);font-size:11px;">${lastDate}</td>
       <td style="text-align:right;">
         <div style="display:flex;gap:4px;justify-content:flex-end;">
-          <div class="icon-btn" title="回答者一覧" onclick="event.stopPropagation();openRespondentList('${s.id}','${s.title.replace(/'/g,"\\'")}')">
+          <div class="icon-btn" title="回答者一覧" onclick="event.stopPropagation();openRespondentList('${s.id}','${s.title.replace(/'/g,"\\'")}')" >
             <svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="5" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M1 11c0-2 2-3 5-3s5 1 5 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
           </div>
           <div class="icon-btn" title="編集" onclick="event.stopPropagation();location.href='index.html?id=${s.id}'">
@@ -295,132 +330,82 @@ function renderTable(rows) {
 }
 
 function filterRows(q) {
-  renderTable(allRows.filter(r => r.survey.title.toLowerCase().includes(q.toLowerCase())));
+  const filtered = allRows.filter(r => r.survey.title.toLowerCase().includes(q.toLowerCase()));
+  renderTable(filtered);
 }
 
-// ── 回答者一覧モーダル ──
+const NON_ANSWER_TYPES = new Set(['cover','description','image','video','url','page_break','branch']);
+
 async function openRespondentList(surveyId, surveyTitle) {
   const modal = document.getElementById('detailModal');
   const body  = document.getElementById('detailModalBody');
-  document.getElementById('detailModalTitle').textContent = `${surveyTitle} — 回答者一覧`;
+  document.getElementById('detailModalTitle').textContent = surveyTitle + ' — 回答者一覧';
   body.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text3);">読み込み中...</div>';
   modal.classList.add('open');
-
   try {
     const responses = await get(`responses?survey_id=eq.${surveyId}&completed=eq.true&select=id,respondent_name,finished_at&order=finished_at.desc`);
-    if(!responses.length) {
-      body.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text3);">回答がまだありません</div>';
-      return;
-    }
+    if(!responses.length) { body.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text3);">回答がまだありません</div>'; return; }
     const COLORS = ['#5b52e8','#0f6e56','#993556','#185fa5','#854f0b','#e0851a'];
-    body.innerHTML = `
-      <div style="font-size:12px;color:var(--text3);margin-bottom:12px;">${responses.length}件の回答</div>
+    body.innerHTML = `<div style="font-size:12px;color:var(--text3);margin-bottom:12px;">${responses.length}件の回答</div>
       <div style="display:flex;flex-direction:column;gap:8px;">
         ${responses.map((r,i) => {
-          const name = r.respondent_name || `回答者 ${i+1}`;
-          const col  = COLORS[i % COLORS.length];
-          const date = new Date(r.finished_at);
-          const dateStr = date.toLocaleDateString('ja-JP',{year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+          const name = r.respondent_name || ('回答者 '+(i+1));
+          const col  = COLORS[i%COLORS.length];
+          const dateStr = r.finished_at ? new Date(r.finished_at).toLocaleString('ja-JP') : '—';
           return `<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);">
             <div style="width:32px;height:32px;border-radius:50%;background:${col};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;flex-shrink:0;">${name.charAt(0)}</div>
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:13px;font-weight:500;color:var(--text);">${name}</div>
-              <div style="font-size:11px;color:var(--text3);">${dateStr}</div>
-            </div>
-            <button class="btn" style="font-size:11px;padding:4px 10px;" onclick="openDetail('${r.id}','${name.replace(/'/g,"\\'")}','${surveyId}')">詳細を見る</button>
+            <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:500;color:var(--text);">${name}</div><div style="font-size:11px;color:var(--text3);">${dateStr}</div></div>
+            <button class="btn" style="font-size:11px;padding:4px 10px;flex-shrink:0;" onclick="openDetail('${r.id}','${name.replace(/'/g,"\\'")}','${surveyId}')">詳細を見る</button>
           </div>`;
         }).join('')}
       </div>`;
-  } catch(e) {
-    body.innerHTML = `<div style="text-align:center;padding:32px;color:var(--danger);">読み込みエラー: ${e.message}</div>`;
-  }
+  } catch(e) { body.innerHTML = `<div style="color:var(--danger);padding:24px;">読み込みエラー: ${e.message}</div>`; }
 }
 
-// ── 回答詳細ポップアップ ──
 async function openDetail(responseId, respondentName, surveyId) {
-  const modal = document.getElementById('detailModal');
-  const body  = document.getElementById('detailModalBody');
-  document.getElementById('detailModalTitle').textContent = `${respondentName} の回答詳細`;
+  const body = document.getElementById('detailModalBody');
+  document.getElementById('detailModalTitle').textContent = respondentName + ' の回答詳細';
   body.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text3);">読み込み中...</div>';
-
   try {
     const [respData, questions, answers] = await Promise.all([
       get(`responses?id=eq.${responseId}&select=*`).then(r=>r[0]),
       get(`questions?survey_id=eq.${surveyId}&select=*,options(*)&order=position`),
       get(`answers?response_id=eq.${responseId}&select=*`)
     ]);
-
     const ansMap = {};
     answers.forEach(a => { ansMap[a.question_id] = a; });
-
-    const date = respData?.finished_at
-      ? new Date(respData.finished_at).toLocaleDateString('ja-JP',{year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})
-      : '—';
-
-    let html = `
-      <div class="resp-meta">
-        <div class="resp-meta-item"><strong>回答者</strong>：${respondentName}</div>
-        <div class="resp-meta-item"><strong>回答日時</strong>：${date}</div>
-      </div>`;
-
+    const date = respData?.finished_at ? new Date(respData.finished_at).toLocaleString('ja-JP') : '—';
+    let html = `<div class="resp-meta"><div class="resp-meta-item"><strong>回答者</strong>：${respondentName}</div><div class="resp-meta-item"><strong>回答日時</strong>：${date}</div></div>`;
     let qNum = 0;
     questions.forEach(q => {
       if(NON_ANSWER_TYPES.has(q.type)) return;
       qNum++;
       const ans = ansMap[q.id];
-      const choices = (q.options||[]).filter(o=>o.option_type==='choice').sort((a,b)=>a.position-b.position);
-      const matrixCols = (q.options||[]).filter(o=>o.option_type==='matrix_col').sort((a,b)=>a.position-b.position);
-      const matrixRows = (q.options||[]).filter(o=>o.option_type==='matrix_row').sort((a,b)=>a.position-b.position);
-
+      const mCols = (q.options||[]).filter(o=>o.option_type==='matrix_col').sort((a,b)=>a.position-b.position);
+      const mRows = (q.options||[]).filter(o=>o.option_type==='matrix_row').sort((a,b)=>a.position-b.position);
       let valHtml = '';
-      if(!ans || !ans.value) {
-        valHtml = '<div class="ans-val-empty">（未回答）</div>';
-      } else if(q.type === 'matrix' || q.type === 'matrix_multi') {
-        let parsed = {};
-        try { parsed = JSON.parse(ans.value); } catch(e) { parsed = {}; }
-        if(matrixRows.length && matrixCols.length) {
-          valHtml = `<table class="matrix-mini">
-            <tr><th></th>${matrixCols.map(c=>`<th>${c.label}</th>`).join('')}</tr>
-            ${matrixRows.map((row,ri) => {
-              const rowAns = parsed[ri] || parsed[row.label] || [];
-              const rowArr = Array.isArray(rowAns) ? rowAns : [rowAns];
-              return `<tr><td>${row.label}</td>${matrixCols.map(c => {
-                const checked = rowArr.includes(c.label) || rowArr.includes(String(matrixCols.indexOf(c)));
-                return `<td style="text-align:center;">${checked ? '✓' : ''}</td>`;
-              }).join('')}</tr>`;
-            }).join('')}
-          </table>`;
-        } else {
-          valHtml = `<div class="ans-val">${ans.value}</div>`;
-        }
-      } else {
-        valHtml = `<div class="ans-val" style="white-space:pre-wrap;">${ans.value}</div>`;
-      }
-
-      html += `<div class="ans-block">
-        <div class="ans-q">Q${qNum}</div>
-        <div class="ans-label">${q.title || ''}</div>
-        ${valHtml}
-      </div>`;
+      if(!ans||!ans.value) { valHtml = '<div class="ans-val-empty">（未回答）</div>'; }
+      else if((q.type==='matrix'||q.type==='matrix_multi') && mRows.length && mCols.length) {
+        let parsed = {}; try { parsed = JSON.parse(ans.value); } catch(e) {}
+        valHtml = `<table class="matrix-mini"><tr><th style="text-align:left;min-width:120px;">子設問</th>${mCols.map(c=>`<th>${c.label}</th>`).join('')}</tr>
+          ${mRows.map((row,ri) => { const rowAns=parsed[ri]||parsed[row.label]||[]; const rowArr=Array.isArray(rowAns)?rowAns:[rowAns];
+            return `<tr><td>${row.label}</td>${mCols.map(c=>`<td style="text-align:center;">${(rowArr.includes(c.label)||rowArr.includes(String(mCols.indexOf(c))))?'✓':''}</td>`).join('')}</tr>`;
+          }).join('')}</table>`;
+      } else { valHtml = `<div class="ans-val">${ans.value}</div>`; }
+      html += `<div class="ans-block"><div class="ans-q">Q${qNum}</div><div class="ans-label">${q.title||''}</div>${valHtml}</div>`;
     });
-
     body.innerHTML = html;
-  } catch(e) {
-    body.innerHTML = `<div style="text-align:center;padding:32px;color:var(--danger);">読み込みエラー: ${e.message}</div>`;
-  }
+  } catch(e) { body.innerHTML = `<div style="color:var(--danger);padding:24px;">読み込みエラー: ${e.message}</div>`; }
 }
 
-function closeDetail() {
-  document.getElementById('detailModal').classList.remove('open');
-}
+function closeDetail() { document.getElementById('detailModal').classList.remove('open'); }
 
-// ── CSV出力モーダル ──
 function openCsvModal() {
   const modal = document.getElementById('csvModal');
   const list  = document.getElementById('csvSurveyList');
   modal.classList.add('open');
   if(!allRows.length) { list.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text3);">データがありません</div>'; return; }
-  list.innerHTML = allRows.map(({ survey: s, stat }) =>
+  list.innerHTML = allRows.map(({survey:s,stat}) =>
     `<div class="csv-survey-item" onclick="exportCSV('${s.id}','${s.title.replace(/'/g,"\\'")}')">
       <div class="csv-survey-item-title">${s.title}</div>
       <div class="csv-survey-item-count">${stat.count}件</div>
@@ -428,123 +413,64 @@ function openCsvModal() {
   ).join('');
 }
 
-function closeCsvModal() {
-  document.getElementById('csvModal').classList.remove('open');
-}
+function closeCsvModal() { document.getElementById('csvModal').classList.remove('open'); }
 
-// ── CSV出力（回答者ごとレコード、2行ヘッダー） ──
 async function exportCSV(surveyId, surveyTitle) {
   closeCsvModal();
   try {
-    // 設問・回答・回答者を並行取得
     const [questions, responses] = await Promise.all([
       get(`questions?survey_id=eq.${surveyId}&select=*,options(*)&order=position`),
       get(`responses?survey_id=eq.${surveyId}&completed=eq.true&select=id,respondent_name,finished_at&order=finished_at.asc`)
     ]);
-
-    // 回答データ取得
-    const answersAll = await Promise.all(
-      responses.map(r => get(`answers?response_id=eq.${r.id}&select=*`))
-    );
-
-    // 設問フィルタ（回答対象のみ）
+    const answersAll = await Promise.all(responses.map(r => get(`answers?response_id=eq.${r.id}&select=*`)));
     const answerableQs = questions.filter(q => !NON_ANSWER_TYPES.has(q.type));
 
-    // ── ヘッダー生成 ──
-    // 固定列
-    const fixedH1 = ['回答者名', '回答日時'];
-    const fixedH2 = ['', ''];
-
-    // 設問列
+    const h1 = ['回答者名','回答日時'], h2 = ['',''];
     let qNum = 0;
-    const h1Cells = []; // 1行目: Q番号+設問文
-    const h2Cells = []; // 2行目: マトリクス子設問 or 空
-
     answerableQs.forEach(q => {
       qNum++;
-      const matrixRows = (q.options||[]).filter(o=>o.option_type==='matrix_row').sort((a,b)=>a.position-b.position);
-      const matrixCols = (q.options||[]).filter(o=>o.option_type==='matrix_col').sort((a,b)=>a.position-b.position);
-
-      if((q.type === 'matrix' || q.type === 'matrix_multi') && matrixRows.length && matrixCols.length) {
-        // マトリクス: 子設問×列 の数だけ列を生成
-        matrixRows.forEach((row, ri) => {
-          matrixCols.forEach((col, ci) => {
-            h1Cells.push(ri === 0 && ci === 0 ? `Q${qNum} ${q.title||''}` : '');
-            h2Cells.push(`${row.label}／${col.label}`);
-          });
-        });
-      } else {
-        h1Cells.push(`Q${qNum} ${q.title||''}`);
-        h2Cells.push('');
-      }
+      const mRows = (q.options||[]).filter(o=>o.option_type==='matrix_row').sort((a,b)=>a.position-b.position);
+      const mCols = (q.options||[]).filter(o=>o.option_type==='matrix_col').sort((a,b)=>a.position-b.position);
+      if((q.type==='matrix'||q.type==='matrix_multi') && mRows.length && mCols.length) {
+        mRows.forEach((row,ri) => { mCols.forEach((col,ci) => { h1.push(ri===0&&ci===0?`Q${qNum} ${q.title||''}`:''); h2.push(`${row.label}／${col.label}`); }); });
+      } else { h1.push(`Q${qNum} ${q.title||''}`); h2.push(''); }
     });
 
-    const header1 = [...fixedH1, ...h1Cells];
-    const header2 = [...fixedH2, ...h2Cells];
-
-    // ── 回答レコード生成 ──
-    const dataRows = responses.map((resp, ri) => {
-      const ansMap = {};
-      (answersAll[ri] || []).forEach(a => { ansMap[a.question_id] = a; });
-
-      const name = resp.respondent_name || `回答者 ${ri+1}`;
-      const date = resp.finished_at
-        ? new Date(resp.finished_at).toLocaleString('ja-JP')
-        : '';
-      const fixedCols = [name, date];
-
-      const qCols = [];
+    const dataRows = responses.map((resp,ri) => {
+      const ansMap = {}; (answersAll[ri]||[]).forEach(a=>{ ansMap[a.question_id]=a; });
+      const name = resp.respondent_name||('回答者 '+(ri+1));
+      const date = resp.finished_at ? new Date(resp.finished_at).toLocaleString('ja-JP') : '';
+      const cols = [name, date];
       answerableQs.forEach(q => {
-        const ans = ansMap[q.id];
-        const val = ans?.value || '';
-        const matrixRows = (q.options||[]).filter(o=>o.option_type==='matrix_row').sort((a,b)=>a.position-b.position);
-        const matrixCols = (q.options||[]).filter(o=>o.option_type==='matrix_col').sort((a,b)=>a.position-b.position);
-
-        if((q.type === 'matrix' || q.type === 'matrix_multi') && matrixRows.length && matrixCols.length) {
-          let parsed = {};
-          try { parsed = JSON.parse(val); } catch(e) {}
-          matrixRows.forEach((row, ri2) => {
-            matrixCols.forEach((col) => {
-              const rowAns = parsed[ri2] || parsed[row.label] || [];
-              const rowArr = Array.isArray(rowAns) ? rowAns : [rowAns];
-              const checked = rowArr.includes(col.label) || rowArr.includes(String(matrixCols.indexOf(col)));
-              qCols.push(checked ? '1' : '');
-            });
-          });
-        } else {
-          qCols.push(val);
-        }
+        const val = ansMap[q.id]?.value||'';
+        const mRows = (q.options||[]).filter(o=>o.option_type==='matrix_row').sort((a,b)=>a.position-b.position);
+        const mCols = (q.options||[]).filter(o=>o.option_type==='matrix_col').sort((a,b)=>a.position-b.position);
+        if((q.type==='matrix'||q.type==='matrix_multi') && mRows.length && mCols.length) {
+          let parsed={}; try{parsed=JSON.parse(val);}catch(e){}
+          mRows.forEach((row,ri2) => { mCols.forEach(col => {
+            const rowAns=parsed[ri2]||parsed[row.label]||[]; const rowArr=Array.isArray(rowAns)?rowAns:[rowAns];
+            cols.push((rowArr.includes(col.label)||rowArr.includes(String(mCols.indexOf(col))))?'1':'');
+          }); });
+        } else { cols.push(val); }
       });
-
-      return [...fixedCols, ...qCols];
+      return cols;
     });
 
-    // ── CSV文字列生成 ──
     const esc = v => `"${String(v).replace(/"/g,'""')}"`;
     const BOM = '\uFEFF';
-    const lines = [
-      header1.map(esc).join(','),
-      header2.map(esc).join(','),
-      ...dataRows.map(row => row.map(esc).join(','))
-    ];
-    const csv = BOM + lines.join('\r\n');
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href = url;
-    a.download = `${surveyTitle}_回答データ_${new Date().toISOString().slice(0,10)}.csv`;
-    document.body.appendChild(a); a.click();
-    document.body.removeChild(a); URL.revokeObjectURL(url);
-  } catch(e) {
-    alert('CSV出力エラー: ' + e.message);
-  }
+    const csv = BOM + [h1,h2,...dataRows].map(r=>r.map(esc).join(',')).join('\r\n');
+    const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href=url; a.download=`${surveyTitle}_回答データ_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  } catch(e) { alert('CSV出力エラー: '+e.message); }
 }
 
-// ── サイドバー ──
+// サイドバーのアンケート一覧をDBから生成
 (async function() {
   try {
-    const surveys = await get('surveys?select=id,title&order=created_at.desc&limit=10');
+    const surveys = await get('surveys?select=id,title,responses(id)&order=created_at.desc&limit=10');
     const container = document.getElementById('sb-survey-list');
     if(!container || !Array.isArray(surveys)) return;
     container.innerHTML = surveys.map(s =>
