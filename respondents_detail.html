@@ -208,7 +208,7 @@ async function loadPage() {
     document.title = `${survey?.title} — 回答者一覧`;
 
     // 設問一覧
-    questions = await get(`questions?survey_id=eq.${SURVEY_ID}&select=id,title,type,position&order=position`);
+    questions = await get(`questions?survey_id=eq.${SURVEY_ID}&select=id,title,type,position,required,options(*)&order=position`);
 
     // 回答セッション
     allResponses = await get(`responses?survey_id=eq.${SURVEY_ID}&completed=eq.true&select=*&order=finished_at.desc`);
@@ -299,23 +299,94 @@ document.getElementById('detailModal').addEventListener('click', e => {
 });
 
 function exportCSV() {
-  const BOM = '\uFEFF';
-  const headers = ['回答者', '回答日時', ...questions.map((q,i)=>`Q${i+1} ${q.title}`)];
-  const rows = allResponses.map((r,i) => {
-    const rAns = allAnswers.filter(a => a.response_id === r.id);
-    const name = r.respondent_name || `回答者 ${i+1}`;
-    const date = new Date(r.finished_at).toLocaleString('ja-JP');
-    const vals = questions.map((_,qi) => `"${(rAns[qi]?.values?.join('、') || rAns[qi]?.value || '').replace(/"/g,'""')}"`);
-    return [`"${name}"`, `"${date}"`, ...vals].join(',');
+  // 除外タイプ
+  const NON_TYPES = new Set(['cover','description','image','video','url','page_break','branch']);
+  const answerableQs = questions.filter(q => !NON_TYPES.has(q.type));
+
+  // 全角スペース・制御文字はString.fromCharCode で安全に生成
+  const SP   = String.fromCharCode(0x3000);
+  const TAB  = String.fromCharCode(9);
+  const CR   = String.fromCharCode(13);
+  const LF   = String.fromCharCode(10);
+  const CRLF = CR + LF;
+  const BOM  = String.fromCharCode(0xFEFF);
+
+  // ── ヘッダー生成 ──
+  const headers = ['回答者ID', '回答日時'];
+  let qNum = 0;
+  answerableQs.forEach(function(q) {
+    qNum++;
+    const mRows = (q.options || [])
+      .filter(function(o) { return o.option_type === 'matrix_row'; })
+      .sort(function(a,b) { return a.position - b.position; });
+    const reqMark = q.required ? ' ※必須' : '';
+    const title = q.title || '';
+
+    if ((q.type === 'matrix' || q.type === 'matrix_multi') && mRows.length) {
+      mRows.forEach(function(row, ri) {
+        headers.push('Q' + qNum + 'S' + (ri+1) + SP + title + reqMark + ' ' + (ri+1) + '．' + row.label);
+      });
+    } else if (q.type === 'text' || q.type === 'textarea') {
+      headers.push('Q' + qNum + 'S1FA' + SP + title + ' ご回答');
+    } else {
+      headers.push('Q' + qNum + SP + title);
+    }
   });
-  const csv = BOM + [headers.join(','), ...rows].join('\r\n');
-  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+
+  // ── データ行生成 ──
+  const dataRows = allResponses.map(function(resp, ri) {
+    const rAns = allAnswers.filter(function(a) { return a.response_id === resp.id; });
+    const ansMap = {};
+    rAns.forEach(function(a) { ansMap[a.question_id] = a; });
+
+    const row = [
+      String(ri + 1),
+      resp.finished_at ? new Date(resp.finished_at).toLocaleString('ja-JP') : ''
+    ];
+
+    answerableQs.forEach(function(q) {
+      const ans = ansMap[q.id];
+      const val = ans ? (ans.value || '') : '';
+      const mRows = (q.options || [])
+        .filter(function(o) { return o.option_type === 'matrix_row'; })
+        .sort(function(a,b) { return a.position - b.position; });
+
+      if ((q.type === 'matrix' || q.type === 'matrix_multi') && mRows.length) {
+        let parsed = {};
+        try { parsed = JSON.parse(val); } catch(e) {}
+        mRows.forEach(function(mrow, ri2) {
+          const rowAns = parsed[ri2] || parsed[mrow.label] || [];
+          const rowArr = Array.isArray(rowAns) ? rowAns : (rowAns ? [rowAns] : []);
+          row.push(rowArr.join('/'));
+        });
+      } else {
+        row.push(val);
+      }
+    });
+    return row;
+  });
+
+  // ── TSV出力（タブ区切り・BOM付きUTF-8）──
+  const sanitize = function(v) {
+    return String(v).split(TAB).join(' ').split(CR).join(' ').split(LF).join(' ');
+  };
+  const lines = [headers].concat(dataRows).map(function(r) {
+    return r.map(sanitize).join(TAB);
+  });
+  const tsv = BOM + lines.join(CRLF);
+
+  const blob = new Blob([tsv], { type: 'text/tab-separated-values;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href=url;
-  a.download=`回答者一覧_${new Date().toISOString().slice(0,10)}.csv`;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (document.getElementById('topbar-title').textContent || 'アンケート') +
+               '_回答データ_' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
 
 // サイドバーDB生成
 (async function() {
