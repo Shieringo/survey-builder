@@ -463,12 +463,13 @@ async function exportCSV(surveyId, surveyTitle) {
           .filter(o => o.option_type === 'matrix_row')
           .sort((a,b) => a.position - b.position);
         if ((q.type === 'matrix' || q.type === 'matrix_multi') && mRows.length) {
+          // JSON { row_index: col_label } から列ラベル（選択肢テキスト）を取得
           let parsed = {};
           try { parsed = JSON.parse(val); } catch(e) {}
           mRows.forEach((mrow, ri2) => {
-            const rowAns = parsed[ri2] || parsed[mrow.label] || [];
-            const rowArr = Array.isArray(rowAns) ? rowAns : (rowAns ? [rowAns] : []);
-            row.push(rowArr.join('/'));
+            const ans = parsed[ri2] || parsed[String(ri2)] || parsed[mrow.label] || '';
+            const ansArr = Array.isArray(ans) ? ans : (ans ? [ans] : []);
+            row.push(ansArr.join('/'));
           });
         } else {
           row.push(val);
@@ -481,23 +482,9 @@ async function exportCSV(surveyId, surveyTitle) {
     const wsData = [headers, ...dataRows];
     const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-    // 列幅を自動調整
-    const colWidths = headers.map((h, ci) => {
-      const maxLen = Math.max(
-        String(h).length,
-        ...dataRows.map(r => String(r[ci] || '').length)
-      );
-      return { wch: Math.min(Math.max(maxLen, 8), 60) };
-    });
-    ws['!cols'] = colWidths;
-
-    // ヘッダー行を太字に
-    headers.forEach((_, ci) => {
-      const cellRef = XLSX.utils.encode_cell({ r: 0, c: ci });
-      if (ws[cellRef]) {
-        ws[cellRef].s = { font: { bold: true } };
-      }
-    });
+    // 列幅 88px 固定（SheetJS は文字数単位: 88px÷7≒13）
+    const colCount = headers.length;
+    ws['!cols'] = Array(colCount).fill({ wch: 13 });
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, '回答データ');

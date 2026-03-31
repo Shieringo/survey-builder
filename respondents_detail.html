@@ -338,12 +338,12 @@ function exportCSV() {
         .filter(function(o) { return o.option_type === 'matrix_row'; })
         .sort(function(a,b) { return a.position - b.position; });
       if ((q.type === 'matrix' || q.type === 'matrix_multi') && mRows.length) {
-        let parsed = {};
+        var parsed = {};
         try { parsed = JSON.parse(val); } catch(e) {}
         mRows.forEach(function(mrow, ri2) {
-          const rowAns = parsed[ri2] || parsed[mrow.label] || [];
-          const rowArr = Array.isArray(rowAns) ? rowAns : (rowAns ? [rowAns] : []);
-          row.push(rowArr.join('/'));
+          var cellAns = parsed[ri2] || parsed[String(ri2)] || parsed[mrow.label] || '';
+          var cellArr = Array.isArray(cellAns) ? cellAns : (cellAns ? [cellAns] : []);
+          row.push(cellArr.join('/'));
         });
       } else {
         row.push(val);
@@ -356,14 +356,8 @@ function exportCSV() {
   const wsData = [headers].concat(dataRows);
   const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-  // 列幅を自動調整
-  ws['!cols'] = headers.map(function(h, ci) {
-    const maxLen = Math.max(
-      String(h).length,
-      dataRows.reduce(function(m, r) { return Math.max(m, String(r[ci] || '').length); }, 0)
-    );
-    return { wch: Math.min(Math.max(maxLen, 8), 60) };
-  });
+  // 列幅 88px 固定（wch単位: 88÷7≒13）
+  ws['!cols'] = Array(headers.length).fill({ wch: 13 });
 
   const surveyTitle = document.getElementById('topbar-title').textContent || 'アンケート';
   const wb = XLSX.utils.book_new();

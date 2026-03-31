@@ -504,13 +504,36 @@ async function submitSurvey() {
         const qi = parseInt(b.dataset.pageQi);
         const dbQ = surveyQuestions[qi];
         if(!dbQ) return;
+
+        let value = '', values = [];
+
+        // マトリクス：行ごとに選択された列ラベルをJSON {row_index: col_label} で保存
+        if(dbQ.type === 'matrix' || dbQ.type === 'matrix_multi') {
+          const qid = b.dataset.qid;
+          const matrixData = {};
+          // 行数を特定（name属性 dq_X_r0, dq_X_r1... ）
+          const rowInputs = b.querySelectorAll(`input[name^="${qid}_r"]`);
+          const rowIndices = new Set([...rowInputs].map(inp => inp.name.replace(qid+'_r','')));
+          rowIndices.forEach(ri => {
+            if(dbQ.type === 'matrix_multi') {
+              const checked = [...b.querySelectorAll(`input[name="${qid}_r${ri}"]:checked`)].map(c=>c.value);
+              if(checked.length) matrixData[ri] = checked;
+            } else {
+              const checked = b.querySelector(`input[name="${qid}_r${ri}"]:checked`);
+              if(checked) matrixData[ri] = checked.value;
+            }
+          });
+          value = JSON.stringify(matrixData);
+          if(Object.keys(matrixData).length) answers.push({ response_id: response.id, question_id: dbQ.id, value, values });
+          return;
+        }
+
         const radio  = b.querySelector('input[type=radio]:checked');
         const checks = [...b.querySelectorAll('input[type=checkbox]:checked')];
         const scale  = b.querySelector('.scale-btn.selected');
         const select = b.querySelector('select');
         const text   = b.querySelector('input[type=text],textarea');
         const ranks  = [...b.querySelectorAll('.rank-label')].map(l=>l.textContent);
-        let value = '', values = [];
         if(radio)              value = radio.value;
         else if(checks.length) { values = checks.map(c=>c.value); value = values.join(','); }
         else if(scale)         value = scale.dataset.val || '';
@@ -733,8 +756,8 @@ async function loadSurveyInfo() {
           if(ri===0 || ri%interval===0) tbl += headerRow();
           const bg = ri%2===0 ? 'var(--surface)' : '#f1f0f8';
           const inputEl = isMulti
-            ? `<input type="checkbox" style="accent-color:var(--accent);" name="${qid}_r${ri}" />`
-            : `<input type="radio"    style="accent-color:var(--accent);" name="${qid}_r${ri}" />`;
+            ? `<input type="checkbox" style="accent-color:var(--accent);" name="${qid}_r${ri}" value="${escHtml(col.label)}" />`
+            : `<input type="radio"    style="accent-color:var(--accent);" name="${qid}_r${ri}" value="${escHtml(col.label)}" />`;
 
           // テキスト行（colspan全幅）
           tbl += `<tr style="background:${bg};">
@@ -746,7 +769,7 @@ async function loadSurveyInfo() {
           // ラジオ行（等間隔）
           tbl += `<tr style="background:${bg};">
             <td class="matrix-arrow-cell">⇒</td>
-            ${cols.map(()=>`<td class="matrix-radio-cell">${inputEl}</td>`).join('')}
+            ${cols.map(col=>`<td class="matrix-radio-cell">${inputEl}</td>`).join('')}
           </tr>`;
 
           if(ri < rows.length-1) tbl += `<tr class="matrix-separator"><td colspan="${cols.length+1}"></td></tr>`;
