@@ -367,7 +367,7 @@ input[type=file] { display: none; }
 .preview-header-bar h3 { font-size: 14px; font-weight: 500; margin-bottom: 3px; }
 .preview-header-bar p { font-size: 11px; opacity: 0.75; }
 .preview-body { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
-.prev-q-item .pq-label { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+.prev-q-item .pq-label { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 6px; white-space: pre-wrap; word-break: break-word; }
 .prev-q-item .pq-req { color: var(--danger); }
 .prev-fake-input { border: 1px solid var(--border2); border-radius: 6px; padding: 7px 10px; font-size: 11px; color: var(--text3); background: #fff; }
 .prev-fake-textarea { border: 1px solid var(--border2); border-radius: 6px; padding: 7px 10px; font-size: 11px; color: var(--text3); background: #fff; height: 48px; }
@@ -909,7 +909,7 @@ function buildQuestionBody(type, q) {
     html += `
       <div class="field-row">
         <div class="field-label">設問文（グループタイトル）</div>
-        <input class="field-input" placeholder="例：以下の項目についてお答えください" value="${q.title||''}" oninput="syncTitle(this,'${id}')" />
+        <textarea class="field-input" placeholder="例：以下の項目についてお答えください" oninput="syncTitle(this,'${id}')" rows="2" style="resize:vertical;min-height:44px;">${q.title||''}</textarea>
       </div>
       <div style="margin-bottom:10px;display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;background:${type==='matrix_multi'?'#dce8ff':'#e8f0ff'};color:${type==='matrix_multi'?'#1a3ab0':'#2a4ac8'};">
         ${multiLabel}
@@ -965,7 +965,7 @@ function buildQuestionBody(type, q) {
     html += `
       <div class="field-row">
         <div class="field-label">設問文</div>
-        <input class="field-input" placeholder="設問を入力してください" value="${q.title||''}" oninput="syncTitle(this,'${id}')" />
+        <textarea class="field-input" placeholder="設問を入力してください" oninput="syncTitle(this,'${id}')" rows="2" style="resize:vertical;min-height:44px;">${q.title||''}</textarea>
       </div>
       <div class="field-row">
         <div class="field-label">選択肢（複数選択可）</div>
@@ -988,7 +988,7 @@ function buildQuestionBody(type, q) {
     html += `
       <div class="field-row">
         <div class="field-label">設問文</div>
-        <input class="field-input" placeholder="設問を入力してください" value="${q.title||''}" oninput="syncTitle(this,'${id}')" />
+        <textarea class="field-input" placeholder="設問を入力してください" oninput="syncTitle(this,'${id}')" rows="2" style="resize:vertical;min-height:44px;">${q.title||''}</textarea>
       </div>
       <div class="field-row">
         <div class="field-label">スケール範囲</div>
@@ -1024,7 +1024,7 @@ function buildQuestionBody(type, q) {
     html += `
       <div class="field-row">
         <div class="field-label">設問文</div>
-        <input class="field-input" placeholder="例：重要だと思う順に並べてください" value="${q.title||''}" oninput="syncTitle(this,'${id}')" />
+        <textarea class="field-input" placeholder="例：重要だと思う順に並べてください" oninput="syncTitle(this,'${id}')" rows="2" style="resize:vertical;min-height:44px;">${q.title||''}</textarea>
       </div>
       <div class="field-row">
         <div class="field-label">ランキング項目 <span style="font-size:10px;color:var(--text3);font-weight:400;">回答者がドラッグで並び替え</span></div>
@@ -1045,7 +1045,7 @@ function buildQuestionBody(type, q) {
     html += `
       <div class="field-row">
         <div class="field-label">表紙タイトル</div>
-        <input class="field-input" placeholder="例：アンケートへのご協力のお願い" value="${q.title||''}" oninput="syncTitle(this,'${id}')" />
+        <textarea class="field-input" placeholder="例：アンケートへのご協力のお願い" oninput="syncTitle(this,'${id}')" rows="2" style="resize:vertical;min-height:44px;">${q.title||''}</textarea>
       </div>
       <div class="field-row">
         <div class="field-label">本文（長文テキスト）</div>
@@ -1179,7 +1179,7 @@ function buildQuestionBody(type, q) {
     html += `
       <div class="field-row">
         <div class="field-label">設問文</div>
-        <input class="field-input" placeholder="設問を入力してください" value="${q.title||''}" oninput="syncTitle(this,'${q.id}')" />
+        <textarea class="field-input" placeholder="設問を入力してください" oninput="syncTitle(this,'${q.id}')" rows="2" style="resize:vertical;min-height:44px;">${q.title||''}</textarea>
       </div>
     `;
 
@@ -1828,7 +1828,7 @@ function buildFullPreview() {
     const isReq = requiredStar && requiredStar.style.opacity !== '0';
 
     html += `<div style="border-bottom:1px solid var(--border2);padding-bottom:18px;">`;
-    html += `<div style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:10px;"><span style="font-weight:700;color:var(--accent);margin-right:6px;">Q${qNum}</span>${qTitle}${isReq ? ' <span style="color:var(--danger);">*</span>' : ''}</div>`;
+    html += `<div style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:10px;white-space:pre-wrap;word-break:break-word;"><span style="font-weight:700;color:var(--accent);margin-right:6px;">Q${qNum}</span>${qTitle.replace(/\n/g,'&#10;')}${isReq ? ' <span style="color:var(--danger);">*</span>' : ''}</div>`;
 
     if(type === 'text') {
       html += `<input style="width:100%;padding:10px 13px;border-radius:8px;border:1px solid var(--border2);font-size:14px;font-family:var(--font);outline:none;background:var(--surface2);" placeholder="回答を入力..." />`;
@@ -2075,7 +2075,7 @@ function buildLivePreview() {
     }
     if(!qTitle) return;
 
-    html += `<div class="prev-q-item"><div class="pq-label">${qLabel}${qTitle}${reqMark}</div>`;
+    html += `<div class="prev-q-item"><div class="pq-label">${qLabel}${qTitle.replace(/\n/g,'&#10;')}${reqMark}</div>`;
 
     if(type === 'text') {
       html += `<div class="prev-fake-input" style="color:var(--text3);font-size:11px;">テキストを入力...</div>`;

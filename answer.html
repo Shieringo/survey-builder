@@ -323,13 +323,14 @@ function countAllAnswered() {
 }
 
 function isAnswered(b) {
-  const input = b.querySelector('input[type=text],input[type=number]');
+  const input = b.querySelector('input.field, input[type=text], input[type=number]');
   const area  = b.querySelector('textarea');
   const sel   = b.querySelector('select');
   const radio = b.querySelector('input[type=radio]:checked');
   const check = b.querySelector('input[type=checkbox]:checked');
   const scale = b.querySelector('.scale-btn.selected');
-  return !!(input?.value || area?.value || sel?.value || radio || check || scale);
+  const rank  = b.querySelector('.ranking-list');
+  return !!(input?.value.trim() || area?.value.trim() || sel?.value || radio || check || scale || rank);
 }
 
 function getVisibleBlocks() {
@@ -668,7 +669,7 @@ async function loadSurveyInfo() {
       let inner = '';
 
       if(q.type === 'text') {
-        inner = `<input class="field" id="${qid}" placeholder="回答を入力..." oninput="updateProgress()" />`;
+        inner = `<input class="field" type="text" id="${qid}" placeholder="回答を入力..." oninput="updateProgress()" />`;
       } else if(q.type === 'textarea') {
         inner = `<textarea class="field" id="${qid}" placeholder="回答を入力..." oninput="updateProgress()"></textarea>`;
       } else if(q.type === 'select') {
