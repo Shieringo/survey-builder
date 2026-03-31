@@ -304,7 +304,7 @@ function renderTable(rows) {
       ? new Date(stat.lastDate).toLocaleDateString('ja-JP', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})
       : '—';
     const barPct = maxCount > 0 ? Math.round(stat.count / maxCount * 100) : 0;
-    return `<tr class="clickable" onclick="openRespondentList('${s.id}','${s.title.replace(/'/g,"\\'")}')">
+    return `<tr class="clickable" onclick="location.href='dashboard.html?id=${s.id}'">
       <td style="font-weight:500;color:var(--text);">${s.title}</td>
       <td><span class="badge ${sc}"><span class="status-dot" style="background:${dotColor};"></span>${sl}</span></td>
       <td><span style="font-weight:600;color:${stat.count>0?'var(--accent)':'var(--text3)'};">${stat.count}件</span></td>
@@ -317,7 +317,7 @@ function renderTable(rows) {
       <td style="color:var(--text3);font-size:11px;">${lastDate}</td>
       <td style="text-align:right;">
         <div style="display:flex;gap:4px;justify-content:flex-end;">
-          <div class="icon-btn" title="回答者一覧" onclick="event.stopPropagation();openRespondentList('${s.id}','${s.title.replace(/'/g,"\\'")}')" >
+          <div class="icon-btn" title="詳細を見る" onclick="event.stopPropagation();location.href='dashboard.html?id=${s.id}'">
             <svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="5" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M1 11c0-2 2-3 5-3s5 1 5 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
           </div>
           <div class="icon-btn" title="編集" onclick="event.stopPropagation();location.href='index.html?id=${s.id}'">
@@ -422,50 +422,86 @@ async function exportCSV(surveyId, surveyTitle) {
       get(`questions?survey_id=eq.${surveyId}&select=*,options(*)&order=position`),
       get(`responses?survey_id=eq.${surveyId}&completed=eq.true&select=id,respondent_name,finished_at&order=finished_at.asc`)
     ]);
-    const answersAll = await Promise.all(responses.map(r => get(`answers?response_id=eq.${r.id}&select=*`)));
-    const answerableQs = questions.filter(q => !NON_ANSWER_TYPES.has(q.type));
+    const answersAll = await Promise.all(
+      responses.map(r => get(`answers?response_id=eq.${r.id}&select=*`))
+    );
+    const NON_TYPES = new Set(['cover','description','image','video','url','page_break','branch']);
+    const answerableQs = questions.filter(q => !NON_TYPES.has(q.type));
 
-    const h1 = ['回答者名','回答日時'], h2 = ['',''];
+    // ── ヘッダー生成（1行・タブ区切り）──
+    const SP = '　'; // 全角スペース
+    const headers = ['回答者ID', '回答日時'];
     let qNum = 0;
     answerableQs.forEach(q => {
       qNum++;
       const mRows = (q.options||[]).filter(o=>o.option_type==='matrix_row').sort((a,b)=>a.position-b.position);
-      const mCols = (q.options||[]).filter(o=>o.option_type==='matrix_col').sort((a,b)=>a.position-b.position);
-      if((q.type==='matrix'||q.type==='matrix_multi') && mRows.length && mCols.length) {
-        mRows.forEach((row,ri) => { mCols.forEach((col,ci) => { h1.push(ri===0&&ci===0?`Q${qNum} ${q.title||''}`:''); h2.push(`${row.label}／${col.label}`); }); });
-      } else { h1.push(`Q${qNum} ${q.title||''}`); h2.push(''); }
+      const reqMark = q.required ? ' ※必須' : '';
+
+      if((q.type==='matrix'||q.type==='matrix_multi') && mRows.length) {
+        // マトリクス: 子設問ごとに1列 Q{n}S{i+1}　{タイトル}{reqMark} {i+1}.{子設問文}
+        mRows.forEach((row, ri) => {
+          headers.push(`Q${qNum}S${ri+1}${SP}${q.title||''}${reqMark} ${ri+1}．${row.label}`);
+        });
+      } else if(q.type==='text' || q.type==='textarea') {
+        // テキスト(FA): Q{n}S1FA　{設問文} ご回答
+        headers.push(`Q${qNum}S1FA${SP}${q.title||''} ご回答`);
+      } else {
+        // 通常選択肢: Q{n}　{設問文}
+        headers.push(`Q${qNum}${SP}${q.title||''}`);
+      }
     });
 
-    const dataRows = responses.map((resp,ri) => {
-      const ansMap = {}; (answersAll[ri]||[]).forEach(a=>{ ansMap[a.question_id]=a; });
-      const name = resp.respondent_name||('回答者 '+(ri+1));
-      const date = resp.finished_at ? new Date(resp.finished_at).toLocaleString('ja-JP') : '';
-      const cols = [name, date];
+    // ── データ行生成 ──
+    const dataRows = responses.map((resp, ri) => {
+      const ansMap = {};
+      (answersAll[ri]||[]).forEach(a => { ansMap[a.question_id] = a; });
+
+      const row = [
+        ri + 1,
+        resp.finished_at ? new Date(resp.finished_at).toLocaleString('ja-JP') : ''
+      ];
+
       answerableQs.forEach(q => {
-        const val = ansMap[q.id]?.value||'';
+        const val = ansMap[q.id]?.value || '';
         const mRows = (q.options||[]).filter(o=>o.option_type==='matrix_row').sort((a,b)=>a.position-b.position);
-        const mCols = (q.options||[]).filter(o=>o.option_type==='matrix_col').sort((a,b)=>a.position-b.position);
-        if((q.type==='matrix'||q.type==='matrix_multi') && mRows.length && mCols.length) {
-          let parsed={}; try{parsed=JSON.parse(val);}catch(e){}
-          mRows.forEach((row,ri2) => { mCols.forEach(col => {
-            const rowAns=parsed[ri2]||parsed[row.label]||[]; const rowArr=Array.isArray(rowAns)?rowAns:[rowAns];
-            cols.push((rowArr.includes(col.label)||rowArr.includes(String(mCols.indexOf(col))))?'1':'');
-          }); });
-        } else { cols.push(val); }
+
+        if((q.type==='matrix'||q.type==='matrix_multi') && mRows.length) {
+          let parsed = {};
+          try { parsed = JSON.parse(val); } catch(e) {}
+          mRows.forEach((mrow, ri2) => {
+            const rowAns = parsed[ri2] || parsed[mrow.label] || [];
+            const rowArr = Array.isArray(rowAns) ? rowAns : (rowAns ? [rowAns] : []);
+            row.push(rowArr.join('/'));
+          });
+        } else {
+          row.push(val);
+        }
       });
-      return cols;
+      return row;
     });
 
-    const esc = v => `"${String(v).replace(/"/g,'""')}"`;
-    const BOM = '\uFEFF';
-    const csv = BOM + [h1,h2,...dataRows].map(r=>r.map(esc).join(',')).join('\r\n');
-    const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
+    // ── TSV出力（タブ区切り・BOM付きUTF-8）──
+    const BOM = '﻿';
+    const lines = [headers, ...dataRows].map(r =>
+      r.map(v => String(v).replace(/	/g, ' ').replace(/
+?
+/g, ' ')).join('	')
+    );
+    const tsv = BOM + lines.join('
+');
+    const blob = new Blob([tsv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href=url; a.download=`${surveyTitle}_回答データ_${new Date().toISOString().slice(0,10)}.csv`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-  } catch(e) { alert('CSV出力エラー: '+e.message); }
+    a.href = url;
+    a.download = `${surveyTitle}_回答データ_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+  } catch(e) {
+    console.error(e);
+    alert('CSV出力エラー: ' + e.message);
+  }
 }
+
 
 // サイドバーのアンケート一覧をDBから生成
 (async function() {
