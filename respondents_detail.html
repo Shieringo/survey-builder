@@ -212,7 +212,7 @@ async function loadPage() {
     questions = await get(`questions?survey_id=eq.${SURVEY_ID}&select=id,title,type,position,required,options(*)&order=position`);
 
     // 回答セッション
-    allResponses = await get(`responses?survey_id=eq.${SURVEY_ID}&completed=eq.true&select=*&order=finished_at.desc`);
+    allResponses = await get(`responses?survey_id=eq.${SURVEY_ID}&completed=eq.true&select=*&order=finished_at.asc`);
     const total  = allResponses.length;
     const weekAgo = new Date(Date.now() - 7*24*60*60*1000);
     const week   = allResponses.filter(r => new Date(r.finished_at) > weekAgo).length;

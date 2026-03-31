@@ -120,6 +120,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 .search-box{flex:1;min-width:160px;max-width:220px;padding:6px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);font-size:12px;font-family:var(--font);background:var(--surface);color:var(--text);outline:none;}
 .search-box:focus{border-color:var(--accent);}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -173,7 +174,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
         <div class="topbar-title">顧客満足度調査 2025 — 回答集計</div>
         <div class="topbar-sub"><span class="status-dot"></span>公開中 · 最終更新 5分前</div>
       </div>
-      <button class="btn" onclick="downloadCSV()"><svg viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>CSV出力</button>
+      <button class="btn" onclick="downloadExcel()"><svg viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Excel出力</button>
       <button class="btn" id="btn-respondents" onclick="goRespondents()"><svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="6" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M2 12c0-2 2-3.5 5-3.5s5 1.5 5 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>回答者一覧</button>
       <button class="btn btn-accent" onclick="downloadPDF()"><svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.4"/><path d="M7 4v4l2.5 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>レポート</button>
     </div>
@@ -272,25 +273,90 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 // 回答推移グラフはloadDashboard内でDB連携描画
 const FONT = "'DM Sans','Noto Sans JP',sans-serif";
 // 回答者テーブル
-// ── CSV出力（DB連携版） ──
-function downloadCSV() {
-  const rows = [...document.querySelectorAll('#respTableBody tr')];
-  const BOM = '\uFEFF';
-  const headers = ['回答者', '第1回答', '第2回答', '日時'];
-  const csvRows = rows.map(tr => {
-    const cells = [...tr.querySelectorAll('td')].map(td => `"${td.textContent.trim().replace(/"/g,'""')}"`);
-    return cells.join(',');
-  }).filter(r => r);
-  const csv = BOM + [headers.join(','), ...csvRows].join('\r\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `回答データ_${new Date().toISOString().slice(0,10)}.csv`;
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a); URL.revokeObjectURL(url);
-  showToast('✓ CSVをダウンロードしました');
+// ── Excel出力 ──
+function downloadExcel() {
+  const questions  = window._dashQuestions  || [];
+  const responses  = window._dashResponses  || [];
+  const answers    = window._dashAnswers    || [];
+  const surveyTitle = window._dashSurveyTitle || 'アンケート';
+
+  if(!questions.length || !responses.length) {
+    showToast('データがまだ読み込まれていません');
+    return;
+  }
+
+  const NON_TYPES = new Set(['cover','description','image','video','url','page_break','branch']);
+  const answerableQs = questions.filter(q => !NON_TYPES.has(q.type));
+  const SP = String.fromCharCode(0x3000);
+
+  // ── ヘッダー生成 ──
+  const headers = ['回答者ID', '回答日時'];
+  let qNum = 0;
+  answerableQs.forEach(function(q) {
+    qNum++;
+    const mRows = (q.options||[])
+      .filter(function(o) { return o.option_type === 'matrix_row'; })
+      .sort(function(a,b) { return a.position - b.position; });
+    const reqMark = q.required ? ' ※必須' : '';
+    const title = q.title || '';
+    if ((q.type === 'matrix' || q.type === 'matrix_multi') && mRows.length) {
+      mRows.forEach(function(row, ri) {
+        headers.push('Q' + qNum + 'S' + (ri+1) + SP + title + reqMark + ' ' + (ri+1) + '．' + row.label);
+      });
+    } else if (q.type === 'text' || q.type === 'textarea') {
+      headers.push('Q' + qNum + 'S1FA' + SP + title + ' ご回答');
+    } else {
+      headers.push('Q' + qNum + SP + title);
+    }
+  });
+
+  // ── データ行（古い順→新しい順）──
+  const sortedResponses = responses.slice().sort(function(a, b) {
+    return new Date(a.finished_at) - new Date(b.finished_at);
+  });
+
+  const dataRows = sortedResponses.map(function(resp, ri) {
+    const rAns = answers.filter(function(a) { return a.response_id === resp.id; });
+    const ansMap = {};
+    rAns.forEach(function(a) { ansMap[a.question_id] = a; });
+
+    const row = [
+      ri + 1,
+      resp.finished_at ? new Date(resp.finished_at).toLocaleString('ja-JP') : ''
+    ];
+
+    answerableQs.forEach(function(q) {
+      const ans = ansMap[q.id];
+      const val = ans ? (ans.value || '') : '';
+      const mRows = (q.options||[])
+        .filter(function(o) { return o.option_type === 'matrix_row'; })
+        .sort(function(a,b) { return a.position - b.position; });
+
+      if ((q.type === 'matrix' || q.type === 'matrix_multi') && mRows.length) {
+        var parsed = {};
+        try { parsed = JSON.parse(val); } catch(e) {}
+        mRows.forEach(function(mrow, ri2) {
+          var cellAns = parsed[ri2] || parsed[String(ri2)] || parsed[mrow.label] || '';
+          var cellArr = Array.isArray(cellAns) ? cellAns : (cellAns ? [cellAns] : []);
+          row.push(cellArr.join('/'));
+        });
+      } else {
+        row.push(val);
+      }
+    });
+    return row;
+  });
+
+  // ── SheetJS で xlsx 生成 ──
+  const wsData = [headers].concat(dataRows);
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols'] = Array(headers.length).fill({ wch: 13 }); // 88px固定
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '回答データ');
+  XLSX.writeFile(wb, surveyTitle + '_回答データ_' + new Date().toISOString().slice(0,10) + '.xlsx');
+  showToast('✓ Excelをダウンロードしました');
 }
+
 
 // ── PDF生成（jsPDF） ──
 function downloadPDF() {
@@ -565,7 +631,12 @@ async function loadDashboard() {
     const answers = await sbGet(`answers?response_id=in.(${responseIds})&select=*`);
 
     // ── 設問一覧を取得（回答の意味を解釈するため） ──
-    const questions = await sbGet(`questions?survey_id=eq.${surveyId}&select=id,title,type,position&order=position`);
+    const questions = await sbGet(`questions?survey_id=eq.${surveyId}&select=id,title,type,position,required,options(*)&order=position`);
+    // グローバルに保存（Excel出力で使用）
+    window._dashSurveyTitle = survey?.title || 'アンケート';
+    window._dashQuestions   = questions;
+    window._dashResponses   = responses;
+    window._dashAnswers     = answers;
 
     // ── 設問ごとの回答を集計 ──
     const qStats = {};
