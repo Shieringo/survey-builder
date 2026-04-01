@@ -73,9 +73,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 
 /* LIST ROW */
 .survey-list { display:flex; flex-direction:column; gap:0; background:var(--surface); border-radius:var(--radius); border:1px solid var(--border); box-shadow:var(--shadow); overflow:hidden; }
-.list-header { display:grid; grid-template-columns:3fr 90px 80px 80px 80px 1fr 120px; align-items:center; padding:9px 16px; background:var(--surface2); border-bottom:1px solid var(--border); }
+.list-header { display:grid; grid-template-columns:3fr 90px 80px 80px 1fr 120px; align-items:center; padding:9px 16px; background:var(--surface2); border-bottom:1px solid var(--border); }
 .list-header span { font-size:11px; font-weight:500; color:var(--text3); letter-spacing:.03em; }
-.list-row { display:grid; grid-template-columns:3fr 90px 80px 80px 80px 1fr 120px; align-items:center; padding:13px 16px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .12s; }
+.list-row { display:grid; grid-template-columns:3fr 90px 80px 80px 1fr 120px; align-items:center; padding:13px 16px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .12s; }
 .list-row:last-child { border-bottom:none; }
 .list-row:hover { background:var(--surface2); }
 .list-row:hover .row-title { color:var(--accent); }
@@ -171,7 +171,6 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
           <span>ステータス</span>
           <span>設問数</span>
           <span>回答数</span>
-          <span>完了率</span>
           <span>最終更新</span>
           <span style="text-align:right;">操作</span>
         </div>
@@ -226,8 +225,8 @@ async function loadSurveys(filter='all') {
 
     // 各アンケートの回答数・設問数を取得
     const stats = await Promise.all(surveys.map(async s => {
-      const qRes = await sb(`questions?survey_id=eq.${s.id}&select=id`, { headers: { 'Accept': 'application/json', Prefer: 'count=exact' } });
-      const rRes = await sb(`responses?survey_id=eq.${s.id}&completed=eq.true&select=id`, { headers: { 'Accept': 'application/json', Prefer: 'count=exact' } });
+      const qRes = await sb(`questions?survey_id=eq.${s.id}&select=id`);
+      const rRes = await sb(`responses?survey_id=eq.${s.id}&completed=eq.true&select=id`);
       return { qCount: Array.isArray(qRes) ? qRes.length : 0, rCount: Array.isArray(rRes) ? rRes.length : 0 };
     }));
 
@@ -260,8 +259,7 @@ async function loadSurveys(filter='all') {
         </div>
         <div class="row-cell"><span class="status-badge ${sc}">${dot}${sl}</span></div>
         <div class="row-cell">${stats[i].qCount}問</div>
-        <div class="row-cell" style="color:var(--accent);font-weight:500;">${stats[i].rCount}件</div>
-        <div class="row-cell">—</div>
+        <div class="row-cell" style="color:var(--accent);font-weight:500;cursor:pointer;" onclick="event.stopPropagation();location.href='dashboard.html?id=${s.id}'">${stats[i].rCount}件</div>
         <div class="row-cell" style="color:var(--text3);font-size:11px;">${updated}</div>
         <div class="row-actions">
           <div class="icon-btn" title="編集" onclick="event.stopPropagation();location.href='index.html?id=${s.id}'"><svg viewBox="0 0 12 12" fill="none"><path d="M2 9.5l1.5-1.5 5-5 1.5 1.5-5 5L2 9.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg></div>
