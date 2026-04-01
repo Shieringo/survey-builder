@@ -250,21 +250,31 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 
       <!-- RESPONSE LIST -->
       <div class="card">
-        <div class="card-title">最近の回答一覧 <span id="resp-list-count"></span></div>
-        <table class="resp-table">
-          <thead>
-            <tr>
-              <th>回答者</th>
-              <th>プラン</th>
-              <th>満足度</th>
-              <th>NPS</th>
-              <th>回答時間</th>
-              <th>日時</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="respTableBody"></tbody>
-        </table>
+        <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;padding-right:16px;">
+          <span>最近の回答一覧 <span id="resp-list-count"></span></span>
+          <div style="position:relative;">
+            <button class="btn" id="addColBtn" onclick="toggleColDropdown()" style="white-space:nowrap;font-size:11px;">
+              <svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M6 3v6M3 6h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+              列を追加
+            </button>
+            <div id="colDropdown" style="display:none;position:absolute;top:calc(100% + 4px);right:0;z-index:200;background:#fff;border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:220px;max-height:280px;overflow-y:auto;">
+              <div style="padding:6px 10px;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">表示する設問を選択（最大3列）</div>
+              <div id="colDropdownList"></div>
+            </div>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="resp-table">
+            <thead>
+              <tr id="respTableHead">
+                <th style="white-space:nowrap;">回答者</th>
+                <th style="white-space:nowrap;">回答日時</th>
+                <th style="text-align:right;white-space:nowrap;">操作</th>
+              </tr>
+            </thead>
+            <tbody id="respTableBody"></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -712,9 +722,8 @@ async function loadDashboard() {
     document.getElementById('kpi-nps').textContent   = total > 0 ? '集計中' : '—';
 
     // ── 回答者テーブル ──
-    const tbody = document.getElementById('respTableBody');
     if(total === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3);">回答がまだありません</td></tr>';
+      document.getElementById('respTableBody').innerHTML = '<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--text3);">回答がまだありません</td></tr>';
       document.getElementById('satisfaction-bars').innerHTML = '<div style="padding:16px;text-align:center;font-size:13px;color:var(--text3);">回答がまだありません</div>';
       return;
     }
@@ -730,6 +739,7 @@ async function loadDashboard() {
     window._dashQuestions   = questions;
     window._dashResponses   = responses;
     window._dashAnswers     = answers;
+    dashUpdateTableHead();
 
     // ── 設問ごとの回答を集計 ──
     const qStats = {};
@@ -888,29 +898,156 @@ async function loadDashboard() {
     }
 
     const COLORS = ['#5b52e8','#0f6e56','#993556','#185fa5','#854f0b','#e0851a'];
-    tbody.innerHTML = responses.slice(0,20).map((r, i) => {
-      const rAnswers = answers.filter(a => a.response_id === r.id);
-      const firstAns = rAnswers[0]?.value || '—';
-      const secondAns = rAnswers[1]?.value || '—';
-      const date = new Date(r.finished_at).toLocaleString('ja-JP', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
-      const name = r.respondent_name || `回答者 ${i+1}`;
-      const col  = COLORS[i % COLORS.length];
-      return `<tr>
-        <td><div style="display:flex;align-items:center;gap:8px;">
-          <div class="avatar-sm" style="background:${col};">${name.charAt(0)}</div>${name}
-        </div></td>
-        <td style="font-size:11px;color:var(--text2);">${firstAns}</td>
-        <td><span class="badge badge-green" style="font-size:10px;">${secondAns}</span></td>
-        <td>—</td>
-        <td>—</td>
-        <td style="color:var(--text3);font-size:11px;">${date}</td>
-        <td><button style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--accent);" onclick="openDetail(this,${JSON.stringify(rAnswers).replace(/"/g,'&quot;')})">詳細 ↗</button></td>
-      </tr>`;
-    }).join('');
+    window._dashCOLORS = COLORS;
+    // 最新順で表示（responses はすでに finished_at.desc で取得済み）
+    dashRenderTable(responses);
 
   } catch(e) {
     console.error('dashboard load error:', e);
   }
+}
+
+// ── 動的列管理（dashboard用）──
+const DASH_MAX_COLS = 3;
+let dashSelectedCols = [];
+let dashCurrentRows  = [];
+const DASH_NON_DISPLAY = new Set(['cover','description','image','video','url','page_break','branch']);
+
+function dashGetAnswerableQs() {
+  return (window._dashQuestions||[]).filter(q => !DASH_NON_DISPLAY.has(q.type));
+}
+
+function dashGetAnswerLabel(q, val) {
+  if (!val) return '—';
+  if (q.type === 'text' || q.type === 'textarea') {
+    return val.length > 30 ? val.slice(0,30) + '…' : val;
+  }
+  if (q.type === 'matrix' || q.type === 'matrix_multi') {
+    try {
+      const parsed = JSON.parse(val);
+      const mRows = (q.options||[]).filter(o=>o.option_type==='matrix_row').sort((a,b)=>a.position-b.position);
+      return mRows.map((row,ri) => {
+        const ans = parsed[ri] || parsed[String(ri)] || parsed[row.label] || '';
+        const arr = Array.isArray(ans) ? ans : (ans ? [ans] : []);
+        return arr.length ? row.label + '：' + arr.join('/') : null;
+      }).filter(Boolean).join('、') || '—';
+    } catch(e) { return val; }
+  }
+  return val.length > 24 ? val.slice(0,24) + '…' : val;
+}
+
+function buildColDropdown() {
+  const list = document.getElementById('colDropdownList');
+  const qs = dashGetAnswerableQs();
+  const selectedIds = new Set(dashSelectedCols.map(c => c.q.id));
+  const atMax = dashSelectedCols.length >= DASH_MAX_COLS;
+  list.innerHTML = qs.map((q, i) => {
+    const isSelected = selectedIds.has(q.id);
+    const disabled   = atMax && !isSelected;
+    const label      = `Q${i+1}：${q.title || '（無題）'}`;
+    const bg     = isSelected ? 'var(--accent-light)' : disabled ? '#f5f5f5' : '';
+    const color  = isSelected ? 'var(--accent)' : disabled ? 'var(--text3)' : 'var(--text)';
+    const cursor = disabled ? 'default' : 'pointer';
+    return `<div onclick="${disabled ? '' : isSelected ? `dashRemoveCol('${q.id}')` : `dashAddCol(${i})`}"
+      style="padding:9px 12px;font-size:12px;background:${bg};color:${color};cursor:${cursor};display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);">
+      <span style="flex:1;">${label}</span>
+      ${isSelected ? '<span style="font-size:16px;line-height:1;color:var(--accent);">✓</span>' : ''}
+    </div>`;
+  }).join('');
+}
+
+function toggleColDropdown() {
+  const dd = document.getElementById('colDropdown');
+  if (dd.style.display === 'none') {
+    buildColDropdown();
+    dd.style.display = 'block';
+  } else {
+    dd.style.display = 'none';
+  }
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#addColBtn') && !e.target.closest('#colDropdown')) {
+    const dd = document.getElementById('colDropdown');
+    if (dd) dd.style.display = 'none';
+  }
+});
+
+function dashAddCol(qIdx) {
+  if (dashSelectedCols.length >= DASH_MAX_COLS) return;
+  const q = dashGetAnswerableQs()[qIdx];
+  if (!q || dashSelectedCols.find(c => c.q.id === q.id)) return;
+  dashSelectedCols.push({ qIdx, q });
+  dashUpdateTableHead();
+  dashRenderTable(dashCurrentRows);
+  buildColDropdown();
+}
+
+function dashRemoveCol(qId) {
+  dashSelectedCols = dashSelectedCols.filter(c => c.q.id !== qId);
+  dashUpdateTableHead();
+  dashRenderTable(dashCurrentRows);
+  buildColDropdown();
+}
+
+function dashUpdateTableHead() {
+  const head = document.getElementById('respTableHead');
+  const aqList = dashGetAnswerableQs();
+  const dynCols = dashSelectedCols.map(c => {
+    const qIdx = aqList.findIndex(q => q.id === c.q.id);
+    const label = `Q${qIdx+1}：${c.q.title || '（無題）'}`;
+    return `<th style="white-space:nowrap;max-width:160px;">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="overflow:hidden;text-overflow:ellipsis;">${label}</span>
+        <span onclick="dashRemoveCol('${c.q.id}')" style="cursor:pointer;color:var(--text3);font-size:14px;line-height:1;flex-shrink:0;" title="列を削除">✕</span>
+      </div>
+    </th>`;
+  }).join('');
+  head.innerHTML = `
+    <th style="white-space:nowrap;">回答者</th>
+    <th style="white-space:nowrap;">回答日時</th>
+    ${dynCols}
+    <th style="text-align:right;white-space:nowrap;">操作</th>
+  `;
+}
+
+function dashRenderTable(rows) {
+  dashCurrentRows = rows;
+  const tbody  = document.getElementById('respTableBody');
+  const COLORS = window._dashCOLORS || ['#5b52e8','#0f6e56','#993556','#185fa5','#854f0b','#e0851a'];
+  const colSpan = 3 + dashSelectedCols.length;
+  if (!rows || !rows.length) {
+    tbody.innerHTML = `<tr><td colspan="${colSpan}" style="text-align:center;padding:24px;color:var(--text3);">回答がまだありません</td></tr>`;
+    return;
+  }
+  const answers = window._dashAnswers || [];
+  tbody.innerHTML = rows.map((r, i) => {
+    const rAnswers = answers.filter(a => a.response_id === r.id);
+    const ansMap   = {};
+    rAnswers.forEach(a => { ansMap[a.question_id] = a; });
+    const date = new Date(r.finished_at).toLocaleString('ja-JP', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    const name = r.respondent_name || `回答者 ${i+1}`;
+    const col  = COLORS[i % COLORS.length];
+
+    const dynCells = dashSelectedCols.map(c => {
+      const ans   = ansMap[c.q.id];
+      const val   = ans?.value || '';
+      const label = dashGetAnswerLabel(c.q, val);
+      const isEmpty = !val;
+      return `<td style="font-size:12px;color:${isEmpty?'var(--text3)':'var(--text2)'};max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${val.replace(/"/g,'&quot;')}">${label}</td>`;
+    }).join('');
+
+    return `<tr>
+      <td><div style="display:flex;align-items:center;gap:8px;">
+        <div class="avatar-sm" style="background:${col};">${name.charAt(0)}</div>${name}
+      </div></td>
+      <td style="color:var(--text3);font-size:11px;white-space:nowrap;">${date}</td>
+      ${dynCells}
+      <td style="text-align:right;">
+        <button style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--accent);" onclick="openDetail(this,${JSON.stringify(rAnswers).replace(/"/g,'&quot;')})">詳細 ↗</button>
+      </td>
+    </tr>`;
+  }).join('');
 }
 
 function goRespondents() {
