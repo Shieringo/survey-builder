@@ -293,12 +293,11 @@ function downloadExcel() {
   const BOM  = String.fromCharCode(0xFEFF);
   const TAB  = String.fromCharCode(9);
 
-  // 選択肢ラベル→番号 逆引きマップ生成（上から N, N-1, ..., 1）
+  // 選択肢ラベル→番号 逆引きマップ生成（上から 1, 2, 3, ...）
   function buildChoiceMap(opts, optType) {
     const sorted = opts.filter(o => o.option_type === optType).sort((a,b) => a.position - b.position);
-    const N = sorted.length;
     const map = {};
-    sorted.forEach((o, i) => { map[o.label] = N - i; });
+    sorted.forEach((o, i) => { map[o.label] = i + 1; });
     return map;
   }
 
@@ -346,7 +345,7 @@ function downloadExcel() {
       } else if (TEXT_TYPES.has(q.type)) {
         row.push(val);
       } else {
-        var choiceMap = buildChoiceMap(q.options||[], 'option');
+        var choiceMap = buildChoiceMap(q.options||[], 'choice');
         if (!val) { row.push(0); return; }
         var labels = [];
         try {

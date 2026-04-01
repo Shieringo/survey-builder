@@ -546,12 +546,11 @@ async function exportCSV(surveyId, surveyTitle) {
     const TAB  = String.fromCharCode(9);
 
     // ── 選択肢ラベル→番号 逆引きマップを設問ごとに生成 ──
-    // 上から順に N, N-1, ..., 1 を付与（positionの昇順が最大値）
+    // 上から順に 1, 2, 3, ... を付与
     function buildChoiceMap(opts, optType) {
       const sorted = opts.filter(o => o.option_type === optType).sort((a,b) => a.position - b.position);
-      const N = sorted.length;
       const map = {};
-      sorted.forEach((o, i) => { map[o.label] = N - i; });
+      sorted.forEach((o, i) => { map[o.label] = i + 1; });
       return map;
     }
 
@@ -596,7 +595,7 @@ async function exportCSV(surveyId, surveyTitle) {
           row.push(val);
         } else {
           // radio / select / checkbox 等：ラベル→番号変換
-          const choiceMap = buildChoiceMap(q.options||[], 'option');
+          const choiceMap = buildChoiceMap(q.options||[], 'choice');
           if (!val) { row.push(0); return; }
           // 複数選択（カンマ区切りやJSON配列の場合も考慮）
           let labels = [];
