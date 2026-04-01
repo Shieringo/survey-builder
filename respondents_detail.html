@@ -416,7 +416,12 @@ function exportCsvFile() {
     return row;
   });
 
-  const sanitize = function(v){ return String(v).split(TAB).join(' ').split(String.fromCharCode(13)).join(' ').split(String.fromCharCode(10)).join(' '); };
+  const sanitize = function(v) {
+    var s = String(v).split(TAB).join(' ').split(String.fromCharCode(13)).join(' ').split(String.fromCharCode(10)).join(' ');
+    s = s.replace(/"/g, '""');
+    if(s.indexOf(',') !== -1 || s.indexOf('"') !== -1) s = '"' + s + '"';
+    return s;
+  };
   const lines = [headers].concat(dataRows).map(function(r){ return r.map(sanitize).join(','); });
   const surveyTitle = document.getElementById('topbar-title').textContent || 'アンケート';
   const blob = new Blob([BOM+lines.join(CRLF)], {type:'text/csv;charset=utf-8;'});
