@@ -351,7 +351,7 @@ function downloadExcel() {
   // ── SheetJS で xlsx 生成 ──
   const wsData = [headers].concat(dataRows);
   const ws = XLSX.utils.aoa_to_sheet(wsData);
-  ws['!cols'] = Array(headers.length).fill({ wch: 13 }); // 88px固定
+  ws['!cols'] = Array(headers.length).fill({ wch: 8.10 }); // 88px固定
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, '回答データ');
   XLSX.writeFile(wb, surveyTitle + '_回答データ_' + new Date().toISOString().slice(0,10) + '.xlsx');
