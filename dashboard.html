@@ -739,6 +739,7 @@ async function loadDashboard() {
     window._dashQuestions   = questions;
     window._dashResponses   = responses;
     window._dashAnswers     = answers;
+    dashLoadCols();
     dashUpdateTableHead();
 
     // ── 設問ごとの回答を集計 ──
@@ -909,8 +910,27 @@ async function loadDashboard() {
 
 // ── 動的列管理（dashboard用）──
 const DASH_MAX_COLS = 3;
-let dashSelectedCols = [];
 let dashCurrentRows  = [];
+
+// ── 列選択の永続化 ──
+const DASH_STORAGE_KEY = 'dash_selected_cols_' + (new URLSearchParams(location.search).get('id') || 'default');
+
+function dashSaveCols() {
+  try { localStorage.setItem(DASH_STORAGE_KEY, JSON.stringify(dashSelectedCols.map(c => c.q.id))); } catch(e) {}
+}
+
+function dashLoadCols() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(DASH_STORAGE_KEY) || '[]');
+    const qs = dashGetAnswerableQs();
+    dashSelectedCols = saved
+      .map(id => { const q = qs.find(q => q.id === id); return q ? { q } : null; })
+      .filter(Boolean)
+      .slice(0, DASH_MAX_COLS);
+  } catch(e) { dashSelectedCols = []; }
+}
+
+let dashSelectedCols = [];
 const DASH_NON_DISPLAY = new Set(['cover','description','image','video','url','page_break','branch']);
 
 function dashGetAnswerableQs() {
@@ -946,7 +966,7 @@ function buildColDropdown() {
     const disabled   = atMax && !isSelected;
     const label      = `Q${i+1}：${q.title || '（無題）'}`;
     const bg     = isSelected ? 'var(--accent-light)' : disabled ? '#f5f5f5' : '';
-    const color  = isSelected ? 'var(--accent)' : disabled ? 'var(--text3)' : 'var(--text)';
+    const color  = isSelected ? 'var(--accent)' : disabled ? 'var(--text3)' : '#1a1825';
     const cursor = disabled ? 'default' : 'pointer';
     return `<div onclick="${disabled ? '' : isSelected ? `dashRemoveCol('${q.id}')` : `dashAddCol(${i})`}"
       style="padding:9px 12px;font-size:12px;background:${bg};color:${color};cursor:${cursor};display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);">
@@ -978,6 +998,7 @@ function dashAddCol(qIdx) {
   const q = dashGetAnswerableQs()[qIdx];
   if (!q || dashSelectedCols.find(c => c.q.id === q.id)) return;
   dashSelectedCols.push({ qIdx, q });
+  dashSaveCols();
   dashUpdateTableHead();
   dashRenderTable(dashCurrentRows);
   buildColDropdown();
@@ -985,6 +1006,7 @@ function dashAddCol(qIdx) {
 
 function dashRemoveCol(qId) {
   dashSelectedCols = dashSelectedCols.filter(c => c.q.id !== qId);
+  dashSaveCols();
   dashUpdateTableHead();
   dashRenderTable(dashCurrentRows);
   buildColDropdown();

@@ -248,6 +248,7 @@ async function loadPage() {
     const ids = allResponses.map(r=>r.id).join(',');
     allAnswers = await get(`answers?response_id=in.(${ids})&select=*`);
 
+    loadCols();
     updateTableHead();
     renderTable(allResponses);
   } catch(e) {
@@ -259,7 +260,25 @@ async function loadPage() {
 
 // ── 動的列管理 ──
 const MAX_COLS = 3;
-let selectedCols = []; // [{qIdx, q}]
+// ── 列選択の永続化 ──
+const COL_STORAGE_KEY = 'detail_selected_cols_' + (SURVEY_ID || 'default');
+
+function saveCols() {
+  try { localStorage.setItem(COL_STORAGE_KEY, JSON.stringify(selectedCols.map(c => c.q.id))); } catch(e) {}
+}
+
+function loadCols() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(COL_STORAGE_KEY) || '[]');
+    const qs = getAnswerableQs();
+    selectedCols = saved
+      .map(id => { const q = qs.find(q => q.id === id); return q ? { q } : null; })
+      .filter(Boolean)
+      .slice(0, MAX_COLS);
+  } catch(e) { selectedCols = []; }
+}
+
+let selectedCols = []; // [{q}]
 const NON_DISPLAY = new Set(['cover','description','image','video','url','page_break','branch']);
 
 function getAnswerableQs() {
@@ -329,6 +348,7 @@ function addCol(qIdx) {
   const q = getAnswerableQs()[qIdx];
   if (!q || selectedCols.find(c => c.q.id === q.id)) return;
   selectedCols.push({ qIdx, q });
+  saveCols();
   updateTableHead();
   renderTable(currentRows);
   buildColDropdown();
@@ -336,6 +356,7 @@ function addCol(qIdx) {
 
 function removeCol(qId) {
   selectedCols = selectedCols.filter(c => c.q.id !== qId);
+  saveCols();
   updateTableHead();
   renderTable(currentRows);
   buildColDropdown();
