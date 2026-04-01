@@ -360,8 +360,8 @@ function exportCSV() {
   const wsData = [headers].concat(dataRows);
   const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-  // 列幅 88px 固定（wch単位: 88÷7≒13）
-  ws['!cols'] = Array(headers.length).fill({ wch: 13 });
+  // 列幅 wch: 8.10
+  ws['!cols'] = Array(headers.length).fill({ wch: 8.10 });
 
   const surveyTitle = document.getElementById('topbar-title').textContent || 'アンケート';
   const wb = XLSX.utils.book_new();
@@ -375,7 +375,7 @@ function exportCsvFile() {
   const NON_TYPES = new Set(['cover','description','image','video','url','page_break','branch']);
   const answerableQs = questions.filter(q => !NON_TYPES.has(q.type));
   const SP = String.fromCharCode(0x3000);
-  const TAB = String.fromCharCode(9);
+  const TAB = String.fromCharCode(9); // sanitize用（出力はカンマ）
   const CRLF = String.fromCharCode(13) + String.fromCharCode(10);
   const BOM = String.fromCharCode(0xFEFF);
 
@@ -417,7 +417,7 @@ function exportCsvFile() {
   });
 
   const sanitize = function(v){ return String(v).split(TAB).join(' ').split(String.fromCharCode(13)).join(' ').split(String.fromCharCode(10)).join(' '); };
-  const lines = [headers].concat(dataRows).map(function(r){ return r.map(sanitize).join(TAB); });
+  const lines = [headers].concat(dataRows).map(function(r){ return r.map(sanitize).join(','); });
   const surveyTitle = document.getElementById('topbar-title').textContent || 'アンケート';
   const blob = new Blob([BOM+lines.join(CRLF)], {type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
