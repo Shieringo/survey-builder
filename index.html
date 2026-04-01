@@ -1955,13 +1955,23 @@ function copyPubUrl() {
 function togglePwInput(cb) {
   document.getElementById('pwInput').style.display = cb.checked ? 'block' : 'none';
 }
-function savePublish() {
+async function savePublish() {
   closePublishModal();
-  const toast = document.createElement('div');
-  toast.textContent = '✓ 設定を保存しました';
-  toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1825;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.2);';
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 2200);
+  const isActive = document.getElementById('pubToggle').checked;
+  if (currentSurveyId) {
+    try {
+      await sbFetch(`surveys?id=eq.${currentSurveyId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: isActive ? 'active' : 'draft' })
+      });
+    } catch(e) { console.error('savePublish error:', e); }
+  }
+  updateMetaStatus(isActive);
+  const dot = document.querySelector('.topbar-sub .status-dot');
+  if (dot) dot.style.background = isActive ? '#22a06b' : '#aba8bb';
+  const sub = document.querySelector('.topbar-sub');
+  if (sub) sub.innerHTML = `<span class="status-dot" style="background:${isActive?'#22a06b':'#aba8bb'};border-radius:50%;display:inline-block;width:6px;height:6px;margin-right:4px;"></span>${isActive?'公開中':'下書き'}`;
+  showToastIndex(isActive ? '✓ 公開しました' : '✓ 下書きに戻しました');
 }
 function openTypeModal() {
   const m = document.getElementById('typeModal');
@@ -2407,6 +2417,18 @@ async function loadSurveyFromDB(id) {
     document.querySelector('.topbar-title').textContent = survey.title;
     document.querySelector('.topbar-sub').innerHTML = `<span class="status-dot" style="background:${survey.status==='active'?'#22a06b':'#aba8bb'};border-radius:50%;display:inline-block;width:6px;height:6px;margin-right:4px;"></span>${survey.status==='active'?'公開中':'下書き'}`;
     updateMetaStatus(survey.status === 'active');
+    const pubToggle = document.getElementById('pubToggle');
+    if (pubToggle) {
+      pubToggle.checked = survey.status === 'active';
+      // pubStatusLabelも同期
+      const pubStatusLabel = document.getElementById('pubStatusLabel');
+      if (pubStatusLabel) {
+        const on = survey.status === 'active';
+        pubStatusLabel.innerHTML = on
+          ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--success);margin-right:5px;vertical-align:middle;"></span>公開中 · 回答を受け付けています'
+          : '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--text3);margin-right:5px;vertical-align:middle;"></span>非公開 · 回答を受け付けていません';
+      }
+    }
 
     // ヘッダー・ボタン色を反映
     if(survey.header_color) {
