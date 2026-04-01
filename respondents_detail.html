@@ -72,8 +72,8 @@ tr.clickable:hover td{background:var(--surface2);cursor:pointer;}
 .modal-body{padding:16px 20px;display:flex;flex-direction:column;gap:10px;max-height:60vh;overflow-y:auto;}
 .modal-foot{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;}
 .ans-block{background:var(--surface2);border-radius:8px;padding:12px;}
-.ans-label{font-size:10px;color:var(--text3);margin-bottom:4px;}
-.ans-value{font-size:13px;color:var(--text);line-height:1.5;}
+.ans-label{font-size:10px;color:#1a1825;margin-bottom:4px;font-weight:600;letter-spacing:.04em;}
+.ans-value{font-size:13px;color:#1a1825;line-height:1.5;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -435,20 +435,61 @@ function filterTable(q) {
 
 function openDetail(responseId, name) {
   const rAns = allAnswers.filter(a => a.response_id === responseId);
-  document.getElementById('modal-title').textContent = `${name} の回答`;
-  document.getElementById('modal-body').innerHTML = questions.length
-    ? questions.map((q, i) => {
-        const ans = rAns[i];
-        const val = ans?.values?.length ? ans.values.join('、') : (ans?.value || '（未回答）');
-        return `<div class="ans-block">
-          <div class="ans-label">Q${i+1} ${q.title}</div>
-          <div class="ans-value">${val}</div>
-        </div>`;
-      }).join('')
-    : rAns.map((a,i) => `<div class="ans-block">
+  const ansMap = {};
+  rAns.forEach(a => { ansMap[a.question_id] = a; });
+
+  document.getElementById('modal-title').textContent = name + ' の回答';
+  const NON_TYPES = new Set(['cover','description','image','video','url','page_break','branch']);
+  const answerableQs = questions.filter(q => !NON_TYPES.has(q.type));
+
+  const blocks = [];
+  if (answerableQs.length) {
+    answerableQs.forEach((q, i) => {
+      const ans = ansMap[q.id];
+      const mCols = (q.options||[]).filter(o=>o.option_type==='matrix_col').sort((a,b)=>a.position-b.position);
+      const mRows = (q.options||[]).filter(o=>o.option_type==='matrix_row').sort((a,b)=>a.position-b.position);
+
+      if ((q.type==='matrix'||q.type==='matrix_multi') && mRows.length && mCols.length) {
+        // マトリクス：子設問ごとに独立ブロック
+        let parsed = {};
+        if (ans && ans.value) { try { parsed = JSON.parse(ans.value); } catch(e) {} }
+        mRows.forEach((row, ri) => {
+          const rowAns = parsed[ri] || parsed[String(ri)] || parsed[row.label] || [];
+          const rowArr = Array.isArray(rowAns) ? rowAns : (rowAns ? [rowAns] : []);
+          const selected = mCols.filter(col => rowArr.includes(col.label));
+          const valHtml = selected.length
+            ? `<div class="ans-value">${selected.map(col=>col.label).join('、')}</div>`
+            : `<div class="ans-value" style="font-style:italic;">（未回答）</div>`;
+          blocks.push(`<div class="ans-block">
+            <div class="ans-label">Q${i+1}S${ri+1} ${row.label}</div>
+            ${valHtml}
+          </div>`);
+        });
+      } else {
+        let valHtml = '';
+        if (!ans || !ans.value) {
+          valHtml = '<div class="ans-value" style="font-style:italic;">（未回答）</div>';
+        } else {
+          valHtml = `<div class="ans-value">${ans.value}</div>`;
+        }
+        blocks.push(`<div class="ans-block">
+          <div class="ans-label">Q${i+1} ${q.title||''}</div>
+          ${valHtml}
+        </div>`);
+      }
+    });
+  } else {
+    rAns.forEach((a,i) => {
+      blocks.push(`<div class="ans-block">
         <div class="ans-label">設問 ${i+1}</div>
         <div class="ans-value">${a.values?.join('、') || a.value || '（未回答）'}</div>
-      </div>`).join('') || '<div style="color:var(--text3);text-align:center;padding:16px;">回答データがありません</div>';
+      </div>`);
+    });
+  }
+  document.getElementById('modal-body').innerHTML = blocks.length
+    ? blocks.join('')
+    : '<div style="color:var(--text3);text-align:center;padding:16px;">回答データがありません</div>';
+
   document.getElementById('detailModal').style.display = 'flex';
 }
 
