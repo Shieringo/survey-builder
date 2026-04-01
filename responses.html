@@ -203,13 +203,12 @@ tr.clickable:hover td{background:var(--surface2);cursor:pointer;}
               <th>アンケート名</th>
               <th>ステータス</th>
               <th>回答数</th>
-              <th>回答率の目安</th>
               <th>最終回答日</th>
               <th style="text-align:right;">操作</th>
             </tr>
           </thead>
           <tbody id="responseTable">
-            <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3);">読み込み中...</td></tr>
+            <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text3);">読み込み中...</td></tr>
           </tbody>
         </table>
       </div>
@@ -305,17 +304,16 @@ async function loadResponses() {
   } catch(e) {
     console.error('loadResponses error:', e);
     document.getElementById('responseTable').innerHTML =
-      '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--danger);">読み込みエラー</td></tr>';
+      '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--danger);">読み込みエラー</td></tr>';
   }
 }
 
 function renderTable(rows) {
   const tbody = document.getElementById('responseTable');
   if(!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3);">データがありません</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text3);">データがありません</td></tr>';
     return;
   }
-  const maxCount = Math.max(...rows.map(r => r.stat.count), 1);
   tbody.innerHTML = rows.map(({ survey: s, stat }) => {
     const sc = STATUS_CLASSES[s.status] || 'badge-gray';
     const sl = STATUS_LABELS[s.status] || '不明';
@@ -323,17 +321,11 @@ function renderTable(rows) {
     const lastDate = stat.lastDate
       ? new Date(stat.lastDate).toLocaleDateString('ja-JP', {month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})
       : '—';
-    const barPct = maxCount > 0 ? Math.round(stat.count / maxCount * 100) : 0;
     return `<tr class="clickable" onclick="location.href='dashboard.html?id=${s.id}'">
       <td style="font-weight:500;color:var(--text);">${s.title}</td>
       <td><span class="badge ${sc}"><span class="status-dot" style="background:${dotColor};"></span>${sl}</span></td>
       <td><span style="font-weight:600;color:${stat.count>0?'var(--accent)':'var(--text3)'};">${stat.count}件</span></td>
-      <td>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <div class="mini-bar-wrap"><div class="mini-bar-fill" style="width:${barPct}%;"></div></div>
-          <span style="font-size:11px;color:var(--text3);">${barPct}%</span>
-        </div>
-      </td>
+
       <td style="color:var(--text3);font-size:11px;">${lastDate}</td>
       <td style="text-align:right;">
         <div style="display:flex;gap:4px;justify-content:flex-end;">
