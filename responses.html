@@ -166,11 +166,11 @@ tr.clickable:hover td{background:var(--surface2);cursor:pointer;}
       <div class="topbar-title">回答データ</div>
       <button class="btn" onclick="openCsvModal()">
         <svg viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3M2 11h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Excel出力
+        ローデータ出力
       </button>
       <button class="btn" onclick="openTsvModal()">
         <svg viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3M2 11h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        CSV
+        ラベルデータ出力
       </button>
     </div>
 
@@ -234,7 +234,7 @@ tr.clickable:hover td{background:var(--surface2);cursor:pointer;}
 <div class="csv-modal-overlay" id="csvModal" onclick="if(event.target===this)closeCsvModal()">
   <div class="csv-modal-box">
     <div class="csv-modal-head">
-      <div class="csv-modal-head-title">Excelを出力するアンケートを選択</div>
+      <div class="csv-modal-head-title">ローデータを出力するアンケートを選択</div>
       <button class="modal-close" onclick="closeCsvModal()">✕</button>
     </div>
     <div class="csv-modal-body">
@@ -249,7 +249,7 @@ tr.clickable:hover td{background:var(--surface2);cursor:pointer;}
 <div class="csv-modal-overlay" id="tsvModal" onclick="if(event.target===this)closeTsvModal()">
   <div class="csv-modal-box">
     <div class="csv-modal-head">
-      <div class="csv-modal-head-title">CSVを出力するアンケートを選択</div>
+      <div class="csv-modal-head-title">ラベルデータを出力するアンケートを選択</div>
       <button class="modal-close" onclick="closeTsvModal()">✕</button>
     </div>
     <div class="csv-modal-body">
@@ -539,27 +539,34 @@ async function exportCSV(surveyId, surveyTitle) {
     );
 
     const NON_TYPES = new Set(['cover','description','image','video','url','page_break','branch']);
+    const TEXT_TYPES = new Set(['text','textarea']);
     const answerableQs = questions.filter(q => !NON_TYPES.has(q.type));
-    const SP = String.fromCharCode(0x3000);
+    const CRLF = String.fromCharCode(13) + String.fromCharCode(10);
+    const BOM  = String.fromCharCode(0xFEFF);
+    const TAB  = String.fromCharCode(9);
 
-    // ── ヘッダー生成 ──
+    // ── 選択肢ラベル→番号 逆引きマップを設問ごとに生成 ──
+    // 上から順に N, N-1, ..., 1 を付与（positionの昇順が最大値）
+    function buildChoiceMap(opts, optType) {
+      const sorted = opts.filter(o => o.option_type === optType).sort((a,b) => a.position - b.position);
+      const N = sorted.length;
+      const map = {};
+      sorted.forEach((o, i) => { map[o.label] = N - i; });
+      return map;
+    }
+
+    // ── ヘッダー生成（設問番号コードのみ）──
     const headers = ['回答者ID', '回答日時'];
     let qNum = 0;
     answerableQs.forEach(function(q) {
       qNum++;
-      const mRows = (q.options||[])
-        .filter(o => o.option_type === 'matrix_row')
-        .sort((a,b) => a.position - b.position);
-      const reqMark = q.required ? ' ※必須' : '';
-      const title = q.title || '';
+      const mRows = (q.options||[]).filter(o => o.option_type === 'matrix_row').sort((a,b) => a.position - b.position);
       if ((q.type === 'matrix' || q.type === 'matrix_multi') && mRows.length) {
-        mRows.forEach((row, ri) => {
-          headers.push('Q' + qNum + 'S' + (ri+1) + SP + title + reqMark + ' ' + (ri+1) + '．' + row.label);
-        });
-      } else if (q.type === 'text' || q.type === 'textarea') {
-        headers.push('Q' + qNum + 'S1FA' + SP + title + ' ご回答');
+        mRows.forEach((row, ri) => { headers.push('Q' + qNum + 'S' + (ri+1)); });
+      } else if (TEXT_TYPES.has(q.type)) {
+        headers.push('Q' + qNum + 'S1FA');
       } else {
-        headers.push('Q' + qNum + SP + title);
+        headers.push('Q' + qNum);
       }
     });
 
@@ -568,42 +575,65 @@ async function exportCSV(surveyId, surveyTitle) {
       const ansMap = {};
       (answersAll[ri]||[]).forEach(a => { ansMap[a.question_id] = a; });
       const row = [ri + 1, resp.finished_at ? new Date(resp.finished_at).toLocaleString('ja-JP') : ''];
+
       answerableQs.forEach(q => {
         const val = ansMap[q.id] ? (ansMap[q.id].value || '') : '';
-        const mRows = (q.options||[])
-          .filter(o => o.option_type === 'matrix_row')
-          .sort((a,b) => a.position - b.position);
+        const mRows = (q.options||[]).filter(o => o.option_type === 'matrix_row').sort((a,b) => a.position - b.position);
+
         if ((q.type === 'matrix' || q.type === 'matrix_multi') && mRows.length) {
-          // JSON { row_index: col_label } から列ラベル（選択肢テキスト）を取得
+          // colの逆引きマップを生成
+          const colMap = buildChoiceMap(q.options||[], 'matrix_col');
           let parsed = {};
           try { parsed = JSON.parse(val); } catch(e) {}
           mRows.forEach((mrow, ri2) => {
             const ans = parsed[ri2] || parsed[String(ri2)] || parsed[mrow.label] || '';
-            const ansArr = Array.isArray(ans) ? ans : (ans ? [ans] : []);
-            row.push(ansArr.join('/'));
+            const arr = Array.isArray(ans) ? ans : (ans ? [ans] : []);
+            if (!arr.length) { row.push(0); return; }
+            row.push(arr.map(label => colMap[label] || 0).join('/'));
           });
-        } else {
+        } else if (TEXT_TYPES.has(q.type)) {
+          // テキスト系はそのまま
           row.push(val);
+        } else {
+          // radio / select / checkbox 等：ラベル→番号変換
+          const choiceMap = buildChoiceMap(q.options||[], 'option');
+          if (!val) { row.push(0); return; }
+          // 複数選択（カンマ区切りやJSON配列の場合も考慮）
+          let labels = [];
+          try {
+            const parsed = JSON.parse(val);
+            labels = Array.isArray(parsed) ? parsed : [String(parsed)];
+          } catch(e) {
+            labels = val.split(',').map(s => s.trim()).filter(Boolean);
+          }
+          if (!labels.length) { row.push(0); return; }
+          if (labels.length === 1) {
+            row.push(choiceMap[labels[0]] || 0);
+          } else {
+            row.push(labels.map(l => choiceMap[l] || 0).join('/'));
+          }
         }
       });
       return row;
     });
 
-    // ── SheetJS で xlsx 生成 ──
-    const wsData = [headers, ...dataRows];
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-    // 列幅 88px 固定（SheetJS は文字数単位: 88px÷7≒13）
-    const colCount = headers.length;
-    ws['!cols'] = Array(colCount).fill({ wch: 8.10 });
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, '回答データ');
-    XLSX.writeFile(wb, surveyTitle + '_回答データ_' + new Date().toISOString().slice(0,10) + '.xlsx');
+    // ── CSV生成・ダウンロード ──
+    const sanitize = v => {
+      let s = String(v).split(TAB).join(' ').split(String.fromCharCode(13)).join(' ').split(String.fromCharCode(10)).join(' ');
+      s = s.replace(/"/g, '""');
+      if (s.indexOf(',') !== -1 || s.indexOf('"') !== -1) s = '"' + s + '"';
+      return s;
+    };
+    const lines = [headers, ...dataRows].map(r => r.map(sanitize).join(','));
+    const blob = new Blob([BOM + lines.join(CRLF)], {type: 'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = surveyTitle + '_ローデータ_' + new Date().toISOString().slice(0,10) + '.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 
   } catch(e) {
     console.error(e);
-    alert('Excel出力エラー: ' + e.message);
+    alert('ローデータ出力エラー: ' + e.message);
   }
 }
 

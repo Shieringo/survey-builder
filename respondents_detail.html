@@ -133,11 +133,11 @@ tr.clickable:hover td{background:var(--surface2);cursor:pointer;}
       </button>
       <button class="btn" onclick="exportCSV()">
         <svg viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Excel出力
+        ローデータ出力
       </button>
       <button class="btn" onclick="exportCsvFile()">
         <svg viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3M2 11h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        CSV
+        ラベルデータ出力
       </button>
     </div>
 
@@ -305,27 +305,33 @@ document.getElementById('detailModal').addEventListener('click', e => {
 
 function exportCSV() {
   const NON_TYPES = new Set(['cover','description','image','video','url','page_break','branch']);
+  const TEXT_TYPES = new Set(['text','textarea']);
   const answerableQs = questions.filter(q => !NON_TYPES.has(q.type));
-  const SP = String.fromCharCode(0x3000);
+  const CRLF = String.fromCharCode(13) + String.fromCharCode(10);
+  const BOM  = String.fromCharCode(0xFEFF);
+  const TAB  = String.fromCharCode(9);
 
-  // ── ヘッダー生成 ──
+  // 選択肢ラベル→番号 逆引きマップ生成（上から N, N-1, ..., 1）
+  function buildChoiceMap(opts, optType) {
+    const sorted = opts.filter(o => o.option_type === optType).sort((a,b) => a.position - b.position);
+    const N = sorted.length;
+    const map = {};
+    sorted.forEach((o, i) => { map[o.label] = N - i; });
+    return map;
+  }
+
+  // ── ヘッダー生成（設問番号コードのみ）──
   const headers = ['回答者ID', '回答日時'];
   let qNum = 0;
   answerableQs.forEach(function(q) {
     qNum++;
-    const mRows = (q.options||[])
-      .filter(function(o) { return o.option_type === 'matrix_row'; })
-      .sort(function(a,b) { return a.position - b.position; });
-    const reqMark = q.required ? ' ※必須' : '';
-    const title = q.title || '';
+    const mRows = (q.options||[]).filter(function(o){ return o.option_type === 'matrix_row'; }).sort(function(a,b){ return a.position - b.position; });
     if ((q.type === 'matrix' || q.type === 'matrix_multi') && mRows.length) {
-      mRows.forEach(function(row, ri) {
-        headers.push('Q' + qNum + 'S' + (ri+1) + SP + title + reqMark + ' ' + (ri+1) + '．' + row.label);
-      });
-    } else if (q.type === 'text' || q.type === 'textarea') {
-      headers.push('Q' + qNum + 'S1FA' + SP + title + ' ご回答');
+      mRows.forEach(function(row, ri) { headers.push('Q' + qNum + 'S' + (ri+1)); });
+    } else if (TEXT_TYPES.has(q.type)) {
+      headers.push('Q' + qNum + 'S1FA');
     } else {
-      headers.push('Q' + qNum + SP + title);
+      headers.push('Q' + qNum);
     }
   });
 
@@ -335,38 +341,59 @@ function exportCSV() {
     const ansMap = {};
     rAns.forEach(function(a) { ansMap[a.question_id] = a; });
     const row = [ri + 1, resp.finished_at ? new Date(resp.finished_at).toLocaleString('ja-JP') : ''];
+
     answerableQs.forEach(function(q) {
       const ans = ansMap[q.id];
       const val = ans ? (ans.value || '') : '';
-      const mRows = (q.options||[])
-        .filter(function(o) { return o.option_type === 'matrix_row'; })
-        .sort(function(a,b) { return a.position - b.position; });
+      const mRows = (q.options||[]).filter(function(o){ return o.option_type === 'matrix_row'; }).sort(function(a,b){ return a.position - b.position; });
+
       if ((q.type === 'matrix' || q.type === 'matrix_multi') && mRows.length) {
+        var colMap = buildChoiceMap(q.options||[], 'matrix_col');
         var parsed = {};
         try { parsed = JSON.parse(val); } catch(e) {}
         mRows.forEach(function(mrow, ri2) {
           var cellAns = parsed[ri2] || parsed[String(ri2)] || parsed[mrow.label] || '';
           var cellArr = Array.isArray(cellAns) ? cellAns : (cellAns ? [cellAns] : []);
-          row.push(cellArr.join('/'));
+          if (!cellArr.length) { row.push(0); return; }
+          row.push(cellArr.map(function(label){ return colMap[label] || 0; }).join('/'));
         });
-      } else {
+      } else if (TEXT_TYPES.has(q.type)) {
         row.push(val);
+      } else {
+        var choiceMap = buildChoiceMap(q.options||[], 'option');
+        if (!val) { row.push(0); return; }
+        var labels = [];
+        try {
+          var p = JSON.parse(val);
+          labels = Array.isArray(p) ? p : [String(p)];
+        } catch(e) {
+          labels = val.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+        }
+        if (!labels.length) { row.push(0); return; }
+        if (labels.length === 1) {
+          row.push(choiceMap[labels[0]] || 0);
+        } else {
+          row.push(labels.map(function(l){ return choiceMap[l] || 0; }).join('/'));
+        }
       }
     });
     return row;
   });
 
-  // ── SheetJS で xlsx 生成 ──
-  const wsData = [headers].concat(dataRows);
-  const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-  // 列幅 wch: 8.10
-  ws['!cols'] = Array(headers.length).fill({ wch: 8.10 });
-
-  const surveyTitle = document.getElementById('topbar-title').textContent || 'アンケート';
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, '回答データ');
-  XLSX.writeFile(wb, surveyTitle + '_回答データ_' + new Date().toISOString().slice(0,10) + '.xlsx');
+  // ── CSV生成・ダウンロード ──
+  var sanitize = function(v) {
+    var s = String(v).split(TAB).join(' ').split(String.fromCharCode(13)).join(' ').split(String.fromCharCode(10)).join(' ');
+    s = s.replace(/"/g, '""');
+    if (s.indexOf(',') !== -1 || s.indexOf('"') !== -1) s = '"' + s + '"';
+    return s;
+  };
+  var lines = [headers].concat(dataRows).map(function(r){ return r.map(sanitize).join(','); });
+  var surveyTitle = document.getElementById('topbar-title').textContent || 'アンケート';
+  var blob = new Blob([BOM + lines.join(CRLF)], {type: 'text/csv;charset=utf-8;'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = surveyTitle + '_ローデータ_' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
 
