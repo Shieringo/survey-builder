@@ -415,10 +415,10 @@ function downloadCsv() {
 
   const sanitize = function(v){ return String(v).split(TAB).join(' ').split(String.fromCharCode(13)).join(' ').split(String.fromCharCode(10)).join(' '); };
   const lines = [headers].concat(dataRows).map(function(r){ return r.map(sanitize).join(TAB); });
-  const blob = new Blob([BOM+lines.join(CRLF)], {type:'text/csv;charset=utf-8;'});
+  const blob = new Blob([BOM+lines.join(CRLF)], {type:'text/tab-separated-values;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href=url; a.download=surveyTitle+'_回答データ_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.href=url; a.download=surveyTitle+'_回答データ_'+new Date().toISOString().slice(0,10)+'.tsv';
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
   showToast('✓ CSVをダウンロードしました');
 }

@@ -168,7 +168,7 @@ tr.clickable:hover td{background:var(--surface2);cursor:pointer;}
         <svg viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3M2 11h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Excel出力
       </button>
-      <button class="btn" onclick="openCsvModalCsv()">
+      <button class="btn" onclick="openTsvModal()">
         <svg viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3M2 11h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         CSV
       </button>
@@ -230,15 +230,30 @@ tr.clickable:hover td{background:var(--surface2);cursor:pointer;}
   </div>
 </div>
 
-<!-- CSV出力 アンケート選択モーダル -->
+<!-- Excel出力 アンケート選択モーダル -->
 <div class="csv-modal-overlay" id="csvModal" onclick="if(event.target===this)closeCsvModal()">
   <div class="csv-modal-box">
     <div class="csv-modal-head">
-      <div class="csv-modal-head-title">CSVを出力するアンケートを選択</div>
+      <div class="csv-modal-head-title">Excelを出力するアンケートを選択</div>
       <button class="modal-close" onclick="closeCsvModal()">✕</button>
     </div>
     <div class="csv-modal-body">
       <div class="csv-survey-list" id="csvSurveyList">
+        <div style="text-align:center;padding:16px;color:var(--text3);">読み込み中...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CSV出力 アンケート選択モーダル（専用） -->
+<div class="csv-modal-overlay" id="tsvModal" onclick="if(event.target===this)closeTsvModal()">
+  <div class="csv-modal-box">
+    <div class="csv-modal-head">
+      <div class="csv-modal-head-title">CSVを出力するアンケートを選択</div>
+      <button class="modal-close" onclick="closeTsvModal()">✕</button>
+    </div>
+    <div class="csv-modal-body">
+      <div class="csv-survey-list" id="tsvSurveyList">
         <div style="text-align:center;padding:16px;color:var(--text3);">読み込み中...</div>
       </div>
     </div>
@@ -405,20 +420,86 @@ async function openDetail(responseId, respondentName, surveyId) {
 
 function closeDetail() { document.getElementById('detailModal').classList.remove('open'); }
 
-function openCsvModal() {
-  const modal = document.getElementById('csvModal');
-  const list  = document.getElementById('csvSurveyList');
+function openTsvModal() {
+  const modal = document.getElementById('tsvModal');
+  const list  = document.getElementById('tsvSurveyList');
+  if(!modal) { alert('モーダルが見つかりません'); return; }
   modal.classList.add('open');
-  if(!allRows.length) { list.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text3);">データがありません</div>'; return; }
+  if(!allRows || !allRows.length) {
+    list.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text3);">データがありません（読み込み中の場合は少し待ってから再試行してください）</div>';
+    return;
+  }
   list.innerHTML = allRows.map(({survey:s,stat}) =>
-    `<div class="csv-survey-item" onclick="exportCSV('${s.id}','${s.title.replace(/'/g,"\\'")}')">
+    `<div class="csv-survey-item" onclick="exportTsvFile('${s.id}','${s.title.replace(/'/g,"\'")}')">
       <div class="csv-survey-item-title">${s.title}</div>
       <div class="csv-survey-item-count">${stat.count}件</div>
     </div>`
   ).join('');
 }
+function closeTsvModal() {
+  const modal = document.getElementById('tsvModal');
+  if(modal) modal.classList.remove('open');
+}
 
-function closeCsvModal() { document.getElementById('csvModal').classList.remove('open'); }
+async function exportTsvFile(surveyId, surveyTitle) {
+  closeTsvModal();
+  try {
+    const [questions, responses] = await Promise.all([
+      get(`questions?survey_id=eq.${surveyId}&select=*,options(*)&order=position`),
+      get(`responses?survey_id=eq.${surveyId}&completed=eq.true&select=id,respondent_name,finished_at&order=finished_at.asc`)
+    ]);
+    const answersAll = await Promise.all(responses.map(r => get(`answers?response_id=eq.${r.id}&select=*`)));
+    const NON_TYPES = new Set(['cover','description','image','video','url','page_break','branch']);
+    const answerableQs = questions.filter(q => !NON_TYPES.has(q.type));
+    const SP   = String.fromCharCode(0x3000);
+    const TAB  = String.fromCharCode(9);
+    const CRLF = String.fromCharCode(13) + String.fromCharCode(10);
+    const BOM  = String.fromCharCode(0xFEFF);
+
+    const headers = ['回答者ID', '回答日時'];
+    let qNum = 0;
+    answerableQs.forEach(q => {
+      qNum++;
+      const mRows = (q.options||[]).filter(o=>o.option_type==='matrix_row').sort((a,b)=>a.position-b.position);
+      const reqMark = q.required ? ' ※必須' : '';
+      const title = q.title || '';
+      if ((q.type==='matrix'||q.type==='matrix_multi') && mRows.length) {
+        mRows.forEach((row,ri) => { headers.push('Q'+qNum+'S'+(ri+1)+SP+title+reqMark+' '+(ri+1)+'．'+row.label); });
+      } else if (q.type==='text'||q.type==='textarea') {
+        headers.push('Q'+qNum+'S1FA'+SP+title+' ご回答');
+      } else {
+        headers.push('Q'+qNum+SP+title);
+      }
+    });
+
+    const dataRows = responses.map((resp,ri) => {
+      const ansMap = {};
+      (answersAll[ri]||[]).forEach(a => { ansMap[a.question_id]=a; });
+      const row = [ri+1, resp.finished_at ? new Date(resp.finished_at).toLocaleString('ja-JP') : ''];
+      answerableQs.forEach(q => {
+        const val = ansMap[q.id] ? (ansMap[q.id].value||'') : '';
+        const mRows = (q.options||[]).filter(o=>o.option_type==='matrix_row').sort((a,b)=>a.position-b.position);
+        if ((q.type==='matrix'||q.type==='matrix_multi') && mRows.length) {
+          let parsed={}; try{parsed=JSON.parse(val);}catch(e){}
+          mRows.forEach((mrow,ri2) => {
+            const ans=parsed[ri2]||parsed[String(ri2)]||parsed[mrow.label]||'';
+            const arr=Array.isArray(ans)?ans:(ans?[ans]:[]);
+            row.push(arr.join('/'));
+          });
+        } else { row.push(val); }
+      });
+      return row;
+    });
+
+    const sanitize = v => String(v).split(TAB).join(' ').split(String.fromCharCode(13)).join(' ').split(String.fromCharCode(10)).join(' ');
+    const lines = [headers,...dataRows].map(r => r.map(sanitize).join(TAB));
+    const blob = new Blob([BOM+lines.join(CRLF)], {type:'text/tab-separated-values;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href=url; a.download=surveyTitle+'_回答データ_'+new Date().toISOString().slice(0,10)+'.tsv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  } catch(e) { console.error(e); alert('CSV出力エラー: '+e.message); }
+}
 
 async function exportCSV(surveyId, surveyTitle) {
   closeCsvModal();
@@ -488,7 +569,7 @@ async function exportCSV(surveyId, surveyTitle) {
 
     // 列幅 88px 固定（SheetJS は文字数単位: 88px÷7≒13）
     const colCount = headers.length;
-    ws['!cols'] = Array(colCount).fill({ wch: 13 });
+    ws['!cols'] = Array(colCount).fill({ wch: 8.10 });
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, '回答データ');
