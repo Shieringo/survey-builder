@@ -98,9 +98,23 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 /* RESPONSE TABLE */
 .resp-table{width:100%;border-collapse:collapse;}
 .resp-table th{font-size:11px;color:var(--text3);text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);font-weight:500;}
-.resp-table td{font-size:12px;color:var(--text2);padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.resp-table td{color:#1a1825;font-size:12px;padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
 .resp-table tr:last-child td{border-bottom:none;}
 .resp-table tr:hover td{background:var(--surface2);}
+.icon-btn{width:26px;height:26px;border-radius:5px;border:1px solid var(--border);background:var(--surface);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;}
+.icon-btn:hover{background:var(--accent-light);border-color:var(--accent);}
+.icon-btn svg{width:12px;height:12px;color:var(--text2);}
+.icon-btn:hover svg{color:var(--accent);}
+.modal{display:none;position:fixed;inset:0;z-index:3000;background:rgba(26,24,37,.5);align-items:center;justify-content:center;}
+.modal-box{background:#fff;border-radius:12px;width:480px;max-width:96vw;box-shadow:0 16px 48px rgba(0,0,0,.18);overflow:hidden;}
+.modal-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-size:14px;font-weight:500;color:var(--text);}
+.modal-close{background:none;border:none;cursor:pointer;font-size:18px;color:var(--text3);line-height:1;}
+.modal-body{padding:16px 20px;display:flex;flex-direction:column;gap:10px;max-height:60vh;overflow-y:auto;}
+.modal-foot{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;}
+.ans-block{background:var(--surface2);border-radius:8px;padding:12px;}
+.ans-label{font-size:10px;color:#1a1825;margin-bottom:4px;font-weight:600;letter-spacing:.04em;}
+.ans-value{font-size:13px;color:#1a1825;line-height:1.5;}
 .avatar-sm{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#fff;flex-shrink:0;}
 .badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;}
 .badge-green{background:#e4f9f1;color:#1a8c5e;}
@@ -258,7 +272,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
               列を追加
             </button>
             <div id="colDropdown" style="display:none;position:absolute;top:calc(100% + 4px);right:0;z-index:200;background:#fff;border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:220px;max-height:280px;overflow-y:auto;">
-              <div style="padding:6px 10px;font-size:10px;color:var(--text3);border-bottom:1px solid var(--border);">表示する設問を選択（最大3列）</div>
+              <div style="padding:6px 10px;font-size:10px;color:#1a1825;font-weight:500;border-bottom:1px solid var(--border);">表示する設問を選択（最大3列）</div>
               <div id="colDropdownList"></div>
             </div>
           </div>
@@ -966,10 +980,11 @@ function buildColDropdown() {
     const disabled   = atMax && !isSelected;
     const label      = `Q${i+1}：${q.title || '（無題）'}`;
     const bg     = isSelected ? 'var(--accent-light)' : disabled ? '#f5f5f5' : '';
-    const color  = isSelected ? 'var(--accent)' : disabled ? 'var(--text3)' : '#1a1825';
+    const fw    = isSelected || (!disabled) ? '500' : '400';
+    const color  = isSelected ? 'var(--accent)' : disabled ? '#aba8bb' : '#1a1825';
     const cursor = disabled ? 'default' : 'pointer';
     return `<div onclick="${disabled ? '' : isSelected ? `dashRemoveCol('${q.id}')` : `dashAddCol(${i})`}"
-      style="padding:9px 12px;font-size:12px;background:${bg};color:${color};cursor:${cursor};display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);">
+      style="padding:9px 12px;font-size:12px;font-weight:${fw};background:${bg};color:${color};cursor:${cursor};display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);">
       <span style="flex:1;">${label}</span>
       ${isSelected ? '<span style="font-size:16px;line-height:1;color:var(--accent);">✓</span>' : ''}
     </div>`;
@@ -1056,17 +1071,19 @@ function dashRenderTable(rows) {
       const val   = ans?.value || '';
       const label = dashGetAnswerLabel(c.q, val);
       const isEmpty = !val;
-      return `<td style="font-size:12px;color:${isEmpty?'var(--text3)':'var(--text2)'};max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${val.replace(/"/g,'&quot;')}">${label}</td>`;
+      return `<td style="font-size:12px;color:#1a1825;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${val.replace(/"/g,'&quot;')}">${label}</td>`;
     }).join('');
 
     return `<tr>
       <td><div style="display:flex;align-items:center;gap:8px;">
         <div class="avatar-sm" style="background:${col};">${name.charAt(0)}</div>${name}
       </div></td>
-      <td style="color:var(--text3);font-size:11px;white-space:nowrap;">${date}</td>
+      <td style="color:#1a1825;font-size:11px;white-space:nowrap;">${date}</td>
       ${dynCells}
       <td style="text-align:right;">
-        <button style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--accent);" onclick="openDetail(this,${JSON.stringify(rAnswers).replace(/"/g,'&quot;')})">詳細 ↗</button>
+        <div class="icon-btn" onclick="openDetailById('${r.id}','${name.replace(/'/g,"\'")}')">
+          <svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.2"/><path d="M6 5v3M6 4.5v-.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        </div>
       </td>
     </tr>`;
   }).join('');
@@ -1082,42 +1099,69 @@ loadDashboard();
 
 </script>
 
-<div id="detailModal" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(26,24,37,.5);align-items:center;justify-content:center;">
-  <div style="background:#fff;border-radius:12px;width:480px;max-width:96vw;box-shadow:0 16px 48px rgba(0,0,0,.18);overflow:hidden;">
-    <div style="padding:18px 20px;border-bottom:1px solid rgba(0,0,0,.08);display:flex;align-items:center;justify-content:space-between;">
-      <div id="detailName" style="font-size:15px;font-weight:500;color:#1a1825;"></div>
-      <button onclick="document.getElementById('detailModal').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:18px;color:#6b677e;padding:2px 6px;">✕</button>
+<!-- 詳細モーダル -->
+<div class="modal" id="detailModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-title">回答詳細</div>
+      <button class="modal-close" onclick="closeDashModal()">✕</button>
     </div>
-    <div style="padding:18px 20px;display:flex;flex-direction:column;gap:12px;" id="detailBody"></div>
-    <div style="padding:12px 20px;border-top:1px solid rgba(0,0,0,.08);display:flex;justify-content:space-between;align-items:center;">
-      <a href="answer.html" target="_blank" style="font-size:12px;color:#5b52e8;">回答ページを開く ↗</a>
-      <button onclick="document.getElementById('detailModal').style.display='none'" style="padding:7px 14px;border-radius:8px;border:1px solid rgba(0,0,0,.08);background:#fff;font-size:13px;cursor:pointer;">閉じる</button>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeDashModal()">閉じる</button>
     </div>
   </div>
 </div>
 <script>
-let detailAnswers = [];
-function openDetail(btn, answersJson) {
-  try {
-    detailAnswers = typeof answersJson === 'string'
-      ? JSON.parse(answersJson.replace(/&quot;/g, '"'))
-      : (answersJson || []);
-  } catch(e) { detailAnswers = []; }
-  const row = btn.closest('tr');
-  const name = row.querySelector('td:first-child')?.textContent?.trim() || '回答者';
-  const date = row.querySelector('td:nth-child(6)')?.textContent?.trim() || '—';
-  document.getElementById('detailName').textContent = name + ' の回答';
-  document.getElementById('detailBody').innerHTML = detailAnswers.length
-    ? detailAnswers.map((a, i) => `
-        <div style="background:#f8f7fc;border-radius:8px;padding:12px;">
-          <div style="font-size:10px;color:#aba8bb;margin-bottom:4px;">設問 ${i+1}</div>
-          <div style="font-size:13px;color:#1a1825;line-height:1.5;">${a.value || (a.values||[]).join(', ') || '（未回答）'}</div>
-        </div>`).join('')
-    : '<div style="color:#aba8bb;text-align:center;padding:16px;">回答データがありません</div>';
+function openDetailById(responseId, name) {
+  const questions = window._dashQuestions || [];
+  const answers   = window._dashAnswers   || [];
+  const rAns = answers.filter(a => a.response_id === responseId);
+  const ansMap = {};
+  rAns.forEach(a => { ansMap[a.question_id] = a; });
+
+  document.getElementById('modal-title').textContent = name + ' の回答';
+  const NON_TYPES = new Set(['cover','description','image','video','url','page_break','branch']);
+  const answerableQs = questions.filter(q => !NON_TYPES.has(q.type));
+
+  document.getElementById('modal-body').innerHTML = answerableQs.length
+    ? answerableQs.map((q, i) => {
+        const ans = ansMap[q.id];
+        const mCols = (q.options||[]).filter(o=>o.option_type==='matrix_col').sort((a,b)=>a.position-b.position);
+        const mRows = (q.options||[]).filter(o=>o.option_type==='matrix_row').sort((a,b)=>a.position-b.position);
+        let valHtml = '';
+        if (!ans || !ans.value) {
+          valHtml = '<div class="ans-value" style="color:#1a1825;font-style:italic;">（未回答）</div>';
+        } else if ((q.type==='matrix'||q.type==='matrix_multi') && mRows.length && mCols.length) {
+          let parsed = {}; try { parsed = JSON.parse(ans.value); } catch(e) {}
+          valHtml = mRows.map((row, ri) => {
+            const rowAns = parsed[ri] || parsed[row.label] || [];
+            const rowArr = Array.isArray(rowAns) ? rowAns : [rowAns];
+            const selected = mCols.filter(col => rowArr.includes(col.label));
+            return selected.length
+              ? `<div class="ans-value" style="margin-bottom:2px;"><span style="color:#1a1825;font-size:11px;">${row.label}：</span>${selected.map(c=>c.label).join('、')}</div>`
+              : `<div class="ans-value" style="margin-bottom:2px;color:#1a1825;font-size:11px;">${row.label}：（未回答）</div>`;
+          }).join('');
+        } else {
+          valHtml = `<div class="ans-value">${ans.value}</div>`;
+        }
+        return `<div class="ans-block">
+          <div class="ans-label">Q${i+1} ${q.title||''}</div>
+          ${valHtml}
+        </div>`;
+      }).join('')
+    : rAns.map((a,i) => `<div class="ans-block">
+        <div class="ans-label">設問 ${i+1}</div>
+        <div class="ans-value">${a.values?.join('、') || a.value || '（未回答）'}</div>
+      </div>`).join('') || '<div style="color:var(--text3);text-align:center;padding:16px;">回答データがありません</div>';
+
   document.getElementById('detailModal').style.display = 'flex';
 }
+function closeDashModal() {
+  document.getElementById('detailModal').style.display = 'none';
+}
 document.getElementById('detailModal').addEventListener('click', function(e){
-  if(e.target===this) this.style.display='none';
+  if(e.target===this) closeDashModal();
 });
 </script>
 
